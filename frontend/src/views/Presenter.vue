@@ -1,160 +1,54 @@
 <template>
-  <div
-    :class="themeClasses.bg"
-    class="fixed inset-0 flex flex-col transition-colors duration-500"
-    @keydown.left="prevSlide"
-    @keydown.right="nextSlide"
-    @keydown.space.prevent="togglePause"
-    tabindex="0"
-    ref="mainEl"
-  >
-    <!-- Slide Display -->
-    <div class="flex-1 flex items-center justify-center p-8">
-      <div class="w-full max-w-5xl text-center">
-        <h2 :class="themeClasses.title" class="text-5xl font-bold mb-8">{{ currentSlide.title }}</h2>
-        <div :class="themeClasses.body" class="text-2xl leading-relaxed slide-body" v-html="currentSlide.content"></div>
-      </div>
-    </div>
-
-    <!-- Bottom Bar -->
-    <div class="flex items-center justify-between bg-black bg-opacity-60 px-6 py-4">
-      <!-- Progress -->
-      <div class="flex items-center gap-4">
-        <span class="text-lg font-mono">{{ store.currentPage + 1 }} / {{ store.totalPages }}</span>
-        <div class="w-32 h-1.5 bg-gray-700 rounded overflow-hidden">
-          <div class="h-full bg-blue-500 transition-all" :style="{ width: (store.currentPage + 1) / store.totalPages * 100 + '%' }"></div>
-        </div>
-      </div>
-
-      <!-- Timer -->
-      <div class="flex items-center gap-4">
-        <button @click="togglePause" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm">
-          {{ isPaused ? '▶ 继续' : '⏸ 暂停' }}
-        </button>
-        <button @click="resetTimer" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm">
-          ↺ 重置
-        </button>
-        <div :class="timerColor" class="text-3xl font-bold font-mono w-20 text-center">
-          {{ formatTime(remaining) }}
-        </div>
-        <span class="text-sm text-gray-400">/ {{ formatTime(currentSlide.duration || 120) }}</span>
-      </div>
-
-      <!-- Navigation -->
-      <div class="flex items-center gap-3">
-        <button @click="prevSlide" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded">
-          ← 上一页
-        </button>
-        <button @click="nextSlide" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded">
-          下一页 →
-        </button>
-      </div>
+  <div :class="themeClasses.bg" class="fixed inset-0 flex items-center justify-center p-12 transition-colors duration-500">
+    <div class="w-full max-w-5xl text-center">
+      <h2 :class="themeClasses.title" class="text-5xl font-bold mb-8">{{ currentSlide.title }}</h2>
+      <div :class="themeClasses.body" class="text-2xl leading-relaxed slide-body" v-html="currentSlide.content"></div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { usePPTStore } from '../stores/ppt'
 import { useSync } from '../utils/sync'
 
-const store = usePPTStore()
 const sync = useSync()
-const mainEl = ref(null)
 
-const remaining = ref(120)
-const isPaused = ref(false)
-let timerInterval = null
+// --- State ---
+const slides = ref([])
+const currentPage = ref(0)
 
-const currentSlide = computed(() => store.currentSlide || {})
+const currentSlide = computed(() => slides.value[currentPage.value] || {})
 
+// --- Theme Config ---
 const themeConfig = {
-  business: { bg: 'bg-gradient-to-br from-slate-800 to-blue-950', title: 'text-white', body: 'text-blue-100' },
-  tech:     { bg: 'bg-gradient-to-br from-gray-950 via-slate-900 to-indigo-950', title: 'text-cyan-300', body: 'text-slate-300' },
-  minimal:  { bg: 'bg-gradient-to-br from-white to-gray-50', title: 'text-gray-900', body: 'text-gray-600' },
-  education:{ bg: 'bg-gradient-to-br from-emerald-50 to-white', title: 'text-emerald-800', body: 'text-gray-700' }
+  business:  { bg: 'bg-gradient-to-br from-slate-800 to-blue-950',   title: 'text-white',       body: 'text-blue-100' },
+  tech:      { bg: 'bg-gradient-to-br from-gray-950 via-slate-900 to-indigo-950', title: 'text-cyan-300', body: 'text-slate-300' },
+  minimal:   { bg: 'bg-gradient-to-br from-white to-gray-50',        title: 'text-gray-900',    body: 'text-gray-600' },
+  education: { bg: 'bg-gradient-to-br from-emerald-50 to-white',     title: 'text-emerald-800', body: 'text-gray-700' }
 }
-const themeClasses = computed(() => themeConfig[store.config.templateStyle] || themeConfig.business)
+const themeClasses = computed(() => themeConfig.business)
 
-const timerColor = computed(() => {
-  if (remaining.value > 30) return 'text-green-400'
-  if (remaining.value > 10) return 'text-yellow-400'
-  return 'text-red-400'
-})
-
+// --- Lifecycle ---
 onMounted(() => {
-  // 恢复数据
-  if (store.slides.length === 0) {
-    const saved = localStorage.getItem('ppt-slides')
-    if (saved) {
-      try { store.setSlides(JSON.parse(saved)) } catch (e) {}
-    }
+  // Fallback: read from localStorage in case we missed the PRESENTATION_START event
+  const saved = localStorage.getItem('ppt-slides')
+  if (saved && slides.value.length === 0) {
+    try { slides.value = JSON.parse(saved) } catch (e) { /* ignore */ }
   }
 
-  store.startPresentation()
-  resetTimer()
-  sync.broadcastPresentationStart(store.slides)
-  sync.broadcastPageChange(store.currentPage, currentSlide.value.narration)
+  sync.on('PAGE_CHANGE', (data) => {
+    currentPage.value = data.pageIndex
+  })
 
-  // 自动聚焦以支持键盘操作
-  mainEl.value?.focus()
+  sync.on('PRESENTATION_START', (data) => {
+    slides.value = data.slides
+    currentPage.value = 0
+  })
 })
-
-function startTimer() {
-  stopTimer()
-  timerInterval = setInterval(() => {
-    if (!isPaused.value && remaining.value > 0) {
-      remaining.value--
-      sync.broadcastTimerUpdate(store.elapsedTime, remaining.value)
-    }
-  }, 1000)
-}
-
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-}
-
-function resetTimer() {
-  const dur = currentSlide.value.duration || 120
-  remaining.value = dur
-  isPaused.value = false
-  startTimer()
-}
-
-function togglePause() {
-  isPaused.value = !isPaused.value
-}
-
-function nextSlide() {
-  if (store.currentPage < store.totalPages - 1) {
-    store.nextPage()
-    resetTimer()
-    sync.broadcastPageChange(store.currentPage, currentSlide.value.narration)
-  }
-}
-
-function prevSlide() {
-  if (store.currentPage > 0) {
-    store.prevPage()
-    resetTimer()
-    sync.broadcastPageChange(store.currentPage, currentSlide.value.narration)
-  }
-}
-
-function formatTime(seconds) {
-  if (seconds < 0) seconds = 0
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
 
 onUnmounted(() => {
-  stopTimer()
-  sync.broadcastPresentationEnd()
-  store.stopPresentation()
+  sync.off('PAGE_CHANGE')
+  sync.off('PRESENTATION_START')
 })
 </script>
 
