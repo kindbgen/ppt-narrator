@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* 基础样式 */
+:root {
+  --primary-color: #2563eb;
+  --secondary-color: #7c3aed;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#app {
+  min-height: 100vh;
+}

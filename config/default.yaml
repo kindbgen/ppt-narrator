@@ -1,0 +1,65 @@
+# 默认配置文件
+
+ai:
+  # AI服务提供商
+  provider: gateway  # claude | openai | ollama | gateway
+
+  # LLM Gateway配置（推荐）
+  gateway:
+    base_url: ''
+    # api_key: 通过环境变量或界面输入
+    model: deepseek-v4-pro
+
+  # Claude配置
+  claude:
+    model: claude-3-5-sonnet-20241022
+    # api_key: 从环境变量或用户输入获取
+
+  # OpenAI配置
+  openai:
+    model: gpt-4
+    # api_key: 从环境变量或用户输入获取
+
+  # Ollama本地模型配置
+  ollama:
+    endpoint: http://localhost:11434
+    model: llama2
+
+templates:
+  # 默认PPT风格
+  default_style: business  # business | tech | minimal | education
+
+  # 自定义模板目录
+  custom_templates_dir: ~/.ppt-narrator/templates
+
+presentation:
+  # 默认每页时长(秒)
+  default_duration: 120
+
+  # 最短时长
+  min_duration: 30
+
+  # 最长时长
+  max_duration: 600
+
+  # 倒计时颜色阈值
+  timer_thresholds:
+    warning: 30  # 黄色提醒
+    critical: 10  # 红色提醒
+
+storage:
+  # 项目保存目录
+  projects_dir: ~/.ppt-narrator/projects
+
+  # 自动保存间隔(秒)
+  auto_save_interval: 60
+
+ui:
+  # 双屏模式窗口配置
+  presenter_window:
+    width: 1920
+    height: 1080
+
+  narrator_window:
+    width: 800
+    height: 600
