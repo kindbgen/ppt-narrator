@@ -21,14 +21,22 @@ npm install
 
 ### 配置AI服务
 
-在 `config/config.yaml` 中配置API密钥，或在使用时输入：
+通过环境变量配置（创建 `.env.local`）：
 
-```yaml
-ai:
-  provider: claude
-  claude:
-    api_key: your-api-key
+```env
+# LLM Gateway（推荐）
+VITE_AI_GATEWAY_BASE_URL=https://your-gateway.example.com
+VITE_AI_GATEWAY_API_KEY=sk-your-api-key
+VITE_AI_GATEWAY_MODEL=deepseek-v4-pro
+
+# 或 Claude
+VITE_CLAUDE_API_KEY=sk-ant-your-api-key
+
+# 或 OpenAI
+VITE_OPENAI_API_KEY=sk-your-api-key
 ```
+
+也可以在UI界面中直接输入配置。
 
 ### 启动应用
 
@@ -126,7 +134,8 @@ presentation:
 - **前端**：Vue 3 + Vite + TailwindCSS
 - **PPT引擎**：Reveal.js
 - **同步机制**：BroadcastChannel API
-- **AI集成**：Claude / OpenAI / Ollama
+- **AI集成**：LLM Gateway / Claude / OpenAI / Ollama（纯前端直接调用）
+- **Wiki对接**：Docmost MCP（前端直接调用）
 
 ## 项目结构
 
@@ -135,13 +144,21 @@ ppt-narrator/
 ├── frontend/              # 前端项目
 │   ├── src/
 │   │   ├── views/        # 页面组件
+│   │   │   ├── Home.vue          # 首页：内容输入、风格选择、AI配置
+│   │   │   ├── Editor.vue        # 编辑器：微调PPT和旁白
+│   │   │   ├── Presenter.vue     # 演示屏：PPT全屏播放
+│   │   │   └── Narrator.vue      # 旁白屏：演讲提示
 │   │   ├── components/   # 通用组件
 │   │   ├── stores/       # Pinia状态管理
+│   │   ├── services/     # AI服务 + Wiki对接
+│   │   │   ├── ai-provider.js    # 多模型AI适配器
+│   │   │   └── docmost.js        # Docmost MCP客户端
 │   │   ├── utils/        # 工具函数
-│   │   └── services/     # AI服务
+│   │   │   ├── parser.js         # Markdown/HTML解析
+│   │   │   └── sync.js           # 双屏同步
+│   │   └── router/       # 路由配置
 │   └── package.json
 ├── prompts/               # AI提示词模板
-├── config/                # 配置文件
 └── README.md
 ```
 

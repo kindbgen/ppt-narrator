@@ -260,6 +260,7 @@ import { useRouter } from 'vue-router'
 import { usePPTStore } from '../stores/ppt'
 import { parser } from '../utils/parser'
 import { AIService } from '../services/ai-provider'
+import { DocmostClient } from '../services/docmost'
 
 const router = useRouter()
 const store = usePPTStore()
@@ -362,34 +363,28 @@ async function fetchFromDocmost() {
   docmostError.value = ''
 
   try {
-    const mcpUrl = import.meta.env.VITE_DOCMOST_MCP_URL || undefined
-    const mcpToken = import.meta.env.VITE_DOCMOST_TOKEN || undefined
+    const mcpUrl = import.meta.env.VITE_DOCMOST_MCP_URL
+    const mcpToken = import.meta.env.VITE_DOCMOST_TOKEN
 
-    const response = await fetch('/api/wiki/fetch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: docmostUrl.value,
-        mcpUrl,
-        mcpToken
-      })
-    })
+    const client = new DocmostClient({ mcpUrl, mcpToken })
+    const parsed = client.parseUrl(docmostUrl.value)
 
-    const data = await response.json()
-
-    if (data.success) {
-      rawContent.value = data.content
-      if (data.title) {
-        rawContent.value = `# ${data.title}\n\n${data.content}`
-      }
-      parseContent()
-      docmostError.value = ''
-    } else {
-      docmostError.value = data.error || '获取失败'
+    if (!parsed) {
+      docmostError.value = '无法解析 URL 格式。支持的格式: /s/{space}/p/{pageId}'
+      return
     }
+
+    const result = await client.fetchPage(parsed.pageIdentifier, parsed.spaceSlug)
+
+    rawContent.value = result.content
+    if (result.title) {
+      rawContent.value = `# ${result.title}\n\n${result.content}`
+    }
+    parseContent()
+    docmostError.value = ''
   } catch (error) {
     console.error('Docmost fetch error:', error)
-    docmostError.value = `网络错误: ${error.message}。请确认后端服务已启动`
+    docmostError.value = `获取文档失败: ${error.message}`
   } finally {
     isFetching.value = false
   }

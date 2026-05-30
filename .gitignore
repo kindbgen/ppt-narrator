@@ -27,9 +27,6 @@ dist-ssr
 .env.local
 .env.production
 
-# Config
-config/config.yaml
-
 # Logs
 logs
 *.log

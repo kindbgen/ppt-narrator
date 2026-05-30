@@ -1,5 +1,3 @@
-import axios from 'axios'
-
 /**
  * Docmost MCP 客户端
  * 通过 Docmost MCP HTTP 端点获取 wiki 页面内容
@@ -27,7 +25,7 @@ export class DocmostClient {
   }
 
   /**
-   * 调用 MCP 工具
+   * 调用 MCP 工具 (浏览器兼容版，使用 fetch 代替 axios)
    */
   async callTool(toolName, args) {
     const body = {
@@ -42,16 +40,18 @@ export class DocmostClient {
 
     console.log(`[MCP] Calling ${toolName}`, JSON.stringify(args).slice(0, 200))
 
-    const res = await axios.post(this.mcpUrl, body, {
+    const res = await fetch(this.mcpUrl, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.mcpToken}`
       },
-      timeout: 30000,
-      responseType: 'text'  // MCP streamable 可能返回 SSE 格式
+      body: JSON.stringify(body)
     })
 
-    return this.parseMCPResponse(res.data, res.headers['content-type'])
+    const text = await res.text()
+    const contentType = res.headers.get('content-type')
+    return this.parseMCPResponse(text, contentType)
   }
 
   /**
@@ -69,11 +69,6 @@ export class DocmostClient {
           } catch (e) { /* continue */ }
         }
       }
-    }
-
-    // JSON 对象
-    if (typeof data === 'object' && data !== null) {
-      return this.extractMCPResult(data)
     }
 
     // JSON 字符串
