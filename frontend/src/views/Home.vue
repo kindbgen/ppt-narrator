@@ -83,7 +83,8 @@
         </div>
       </section>
 
-      <button @click="generate" :disabled="!canGen || generating" class="w-full py-3.5 bg-gray-900 text-white rounded-xl text-base font-medium disabled:opacity-30 hover:bg-gray-800 transition-colors">{{ generating ? 'AI 正在生成...' : '🤖 AI 智能生成 PPT 和旁白' }}</button>
+      <button @click="!canGen ? null : generate()" :disabled="!canGen || generating" class="w-full py-3.5 bg-gray-900 text-white rounded-xl text-base font-medium disabled:opacity-30 hover:bg-gray-800 transition-colors">{{ generating ? 'AI 正在生成...' : '🤖 AI 智能生成 PPT 和旁白' }}</button>
+      <p v-if="!rawContent" class="text-xs text-gray-400 text-center mt-2">请先在上方输入文档内容</p>
       <button @click="quickTest" class="w-full mt-3 py-2.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">⚡ 一键快速测试（内置模版，无需配置AI）</button>
 
       <div v-if="generating" class="fixed inset-0 z-50 bg-white/80 flex items-center justify-center">
@@ -99,7 +100,7 @@ import { useRouter } from 'vue-router'
 import { usePPTStore } from '../stores/ppt'
 import { AIService } from '../services/ai-provider'
 import { DocmostClient } from '../services/docmost'
-import { createProject } from '../services/storage'
+import { createProject, updateProjectSlides, updateProjectMeta, updateSlide } from '../services/storage'
 import AppShell from '../components/layout/AppShell.vue'
 
 const router = useRouter()
@@ -157,24 +158,59 @@ function quickTest() {
 
 async function doGenerate(provider, settings) {
   if (!rawContent.value) return
-  generating.value = true
-  try {
-    const aiConfig = provider === 'gateway' ? { baseUrl: settings.baseUrl || '', apiKey: settings.apiKey || '', model: settings.model || '' }
-      : provider === 'claude' ? { apiKey: settings.apiKey || '' }
-      : provider === 'openai' ? { apiKey: settings.apiKey || '' }
-      : {}
-    const ai = new AIService(provider, aiConfig)
-    const r = await ai.generatePPT(rawContent.value, selStyle.value)
-    if (r.slides?.length) {
-      for (const slide of r.slides) { const nr = await ai.generateNarration(slide); slide.narration = nr.narration || ''; slide.keywords = nr.keywords || []; slide.tips = nr.tips || [] }
-      const closing = { layout: 'closing', title: '谢谢大家', duration: 10, content: '<div class="ppt-closing"><h1>Thank you !</h1></div>', keyPoints: [], narration: '谢谢大家！', keywords: [], tips: [] }
-      const all = [...r.slides, closing]
-      store.setSlides(all); store.setAIProvider(provider); store.setTemplateStyle(selStyle.value)
-      const id = await createProject({ slides: all, meta: { title: '未命名项目', templateStyle: selStyle.value, aiProvider: provider, rawContent: rawContent.value } })
-      store.currentProjectId = id; localStorage.setItem('ppt-active-project', id)
-      shell.value?.load(); router.push('/editor')
-    } else { alert('AI 返回空内容') }
-  } catch (e) { alert('生成失败: ' + e.message) } finally { generating.value = false }
+  const aiConfig = provider === 'gateway' ? { baseUrl: settings.baseUrl || '', apiKey: settings.apiKey || '', model: settings.model || '' }
+    : provider === 'claude' ? { apiKey: settings.apiKey || '' } : provider === 'openai' ? { apiKey: settings.apiKey || '' } : {}
+  const ai = new AIService(provider, aiConfig)
+
+  // Create placeholder project immediately so sidebar shows it
+  const placeholderSlides = [{ layout: 'cover', title: '正在生成...', duration: 15, content: '<div class="ppt-cover"><h1>正在生成 PPT...</h1></div>', narration: '', keywords: [], tips: [] }]
+  const tempId = await createProject({ slides: placeholderSlides, meta: { title: '正在生成...', templateStyle: selStyle.value, aiProvider: provider, rawContent: rawContent.value } })
+  store.currentProjectId = tempId; localStorage.setItem('ppt-active-project', tempId)
+  store.setSlides(placeholderSlides)
+  store.setAIProvider(provider); store.setTemplateStyle(selStyle.value)
+  shell.value?.load()
+
+  // Navigate to editor immediately
+  router.push('/editor')
+  await new Promise(r => setTimeout(r, 150))
+  store.generatingNarrations = true
+  store.narrationProgress = { current: 0, total: 0, phase: 'ppt' }
+  store.generatingProjectId = tempId
+
+  // Generate PPT
+  let r
+  try { r = await ai.generatePPT(rawContent.value, selStyle.value) }
+  catch (e) { store.generatingNarrations = false; store.narrationProgress = null; store.slides = [{ layout: 'cover', title: '生成失败', duration: 15, content: '<div class="ppt-cover"><h1>PPT 生成失败</h1></div>', narration: '', keywords: [], tips: [] }]; return }
+  if (!r.slides?.length) { store.generatingNarrations = false; store.narrationProgress = null; return }
+
+  const closing = { layout: 'closing', title: '感谢观看', duration: 10, content: '<div class="ppt-closing"><h1>感谢观看</h1></div>', keyPoints: [], narration: '', keywords: [], tips: [] }
+  const allSlides = [...r.slides, closing]
+  const projectName = r.slides[0]?.title || '未命名项目'
+
+  // Update with real slides
+  store.setSlides(allSlides.map(s => ({ ...s, narration: '生成中...', keywords: [], tips: [] })))
+  store.projectTitle = projectName
+  await updateProjectSlides(tempId, allSlides)
+  await updateProjectMeta(tempId, { title: projectName })
+  window.dispatchEvent(new CustomEvent('sidebar-refresh'))
+
+  // Generate narrations for all slides including closing
+  store.narrationProgress = { current: 0, total: allSlides.length, phase: 'narration' }
+  for (let i = 0; i < allSlides.length; i++) {
+    if (store.generatingProjectId !== tempId) break
+    try {
+      const nr = await ai.generateNarration(r.slides[i])
+      if (store.generatingProjectId === tempId) {
+        store.slides[i] = { ...store.slides[i], narration: nr.narration || '', keywords: nr.keywords || [], tips: nr.tips || [] }
+      }
+      store.narrationProgress = { current: i + 1, total: r.slides.length, phase: 'narration' }
+      await updateSlide(tempId, i, { narration: nr.narration || '', keywords: nr.keywords || [], tips: nr.tips || [], content: r.slides[i].content })
+    } catch (e) { console.warn('Narration failed for slide', i, e) }
+  }
+  if (store.generatingProjectId === tempId) {
+    store.generatingNarrations = false
+    store.narrationProgress = null
+  }
 }
 
 function newProject() { method.value = 'paste'; rawContent.value = ''; selStyle.value = 'business'; currentProjectId.value = null }

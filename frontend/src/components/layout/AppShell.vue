@@ -1,10 +1,10 @@
 <template>
   <div class="flex h-screen bg-white text-gray-900">
-    <aside v-if="collapsed" class="w-14 flex flex-col items-center border-r border-gray-100 bg-gray-50/50 shrink-0 py-3 gap-3">
-      <button @click="collapsed = false" class="text-gray-400 hover:text-gray-600 text-sm transition-colors" title="展开">▶</button>
-      <button @click="goHome" class="text-gray-400 hover:text-gray-600 transition-colors" title="新建">+</button>
+    <aside v-if="collapsed" class="w-14 flex flex-col items-center border-r border-gray-100 bg-gray-50/50 shrink-0 py-4 gap-4">
+      <button @click="collapsed = false" class="text-gray-400 hover:text-gray-600 text-lg transition-colors" title="展开侧边栏">▶</button>
+      <button @click="goHome" class="text-gray-400 hover:text-gray-600 text-xl transition-colors" title="新建项目">+</button>
       <div class="flex-1" />
-      <button @click="showSettings = true" class="text-gray-400 hover:text-gray-600 transition-colors" title="设置">⚙️</button>
+      <button @click="showSettings = true" class="text-gray-400 hover:text-gray-600 text-xl transition-colors" title="设置">⚙️</button>
     </aside>
 
     <aside v-else class="w-60 flex flex-col border-r border-gray-100 bg-gray-50/50 shrink-0 transition-all duration-200">
@@ -13,13 +13,13 @@
           <span class="text-lg">📽️</span>
           <h1 class="text-sm font-bold tracking-tight">PPT 演讲助手</h1>
         </router-link>
-        <button @click="collapsed = true" class="text-gray-300 hover:text-gray-500 text-xs transition-colors">◀</button>
+        <button @click="collapsed = true" class="text-gray-300 hover:text-gray-500 text-xs transition-colors" title="收起侧边栏">◀</button>
       </div>
 
       <div class="flex-1 overflow-y-auto">
         <div class="flex items-center justify-between px-4 py-2.5">
           <span class="text-xs font-medium text-gray-400">历史项目</span>
-          <button @click="goHome" class="text-gray-300 hover:text-gray-600 text-base leading-none transition-colors">+</button>
+          <button @click="goHome" class="text-gray-300 hover:text-gray-600 text-base leading-none transition-colors" title="新建项目">+</button>
         </div>
         <p v-if="!projects.length" class="text-xs text-gray-300 text-center py-10 px-4">暂无项目，点击 + 新建</p>
         <div class="px-2">
@@ -47,7 +47,7 @@
       </div>
 
       <div class="border-t border-gray-100 px-4 py-2.5 flex items-center">
-        <button @click="showSettings = true" class="flex items-center gap-2 w-full text-xs text-gray-400 hover:text-gray-600 transition-colors py-1">
+        <button @click="showSettings = true" class="flex items-center gap-2 w-full text-xs text-gray-400 hover:text-gray-600 transition-colors py-1" title="设置">
           <span>⚙️</span><span>设置</span>
           <span v-if="!hasAI" class="w-1.5 h-1.5 rounded-full bg-orange-400 ml-auto" title="AI 未配置"></span>
         </button>
@@ -162,7 +162,7 @@ async function openProject(id) {
 
 function goHome() { menuId.value = null; router.push('/'); emit('newProject') }
 function closeMenus() { menuId.value = null }
-onMounted(() => { load(); document.addEventListener('click', closeMenus) })
-onUnmounted(() => { document.removeEventListener('click', closeMenus) })
+onMounted(() => { load(); document.addEventListener('click', closeMenus); window.addEventListener('sidebar-refresh', load) })
+onUnmounted(() => { document.removeEventListener('click', closeMenus); window.removeEventListener('sidebar-refresh', load) })
 defineExpose({ load, hasAI, cfg })
 </script>

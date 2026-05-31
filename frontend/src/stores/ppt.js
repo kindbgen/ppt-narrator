@@ -18,6 +18,11 @@ export const usePPTStore = defineStore('ppt', {
     isPresenting: false,
     elapsedTime: 0,
 
+    // AI 生成状态
+    generatingNarrations: false,
+    narrationProgress: null,
+    generatingProjectId: null,
+
     // 配置
     config: {
       aiProvider: 'claude',

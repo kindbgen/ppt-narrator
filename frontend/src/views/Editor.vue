@@ -20,7 +20,12 @@
         </div>
         <div class="flex items-center gap-4">
           <span class="text-xs" :class="saveStatus.class">{{ saveStatus.text }}</span>
-          <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">开始演示</button>
+          <span v-if="store.generatingNarrations" class="text-xs text-blue-500">
+            {{ store.narrationProgress?.phase === 'ppt'
+              ? '🤖 AI 正在分析内容生成 PPT 页面...'
+              : `🤖 正在生成旁白 ${store.narrationProgress?.current || 0}/${store.narrationProgress?.total || 0}...` }}
+          </span>
+          <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors" :disabled="store.generatingNarrations">开始演示</button>
           <div class="relative">
             <button @click="showExport = !showExport" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">导出 ▼</button>
             <div v-if="showExport" class="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 w-44">
@@ -251,6 +256,7 @@ function updateSlidePreviews() {
     last.author = speaker.value; last.department = department.value
     last.startTime = startTime.value || ''
     last.content = new AIService('mock', {})._renderClosing(last)
+    last.title = '感谢观看'
   }
   // Sync the editable content if currently viewing cover or closing
   if (store.currentPage === 0 || store.currentPage === store.slides.length - 1) {

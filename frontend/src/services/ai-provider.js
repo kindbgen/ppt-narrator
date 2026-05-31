@@ -526,7 +526,7 @@ POINTS:
   _renderClosing(s) {
     const meta = [s.author, s.department, s.startTime].filter(Boolean)
     return `<div class="ppt-closing">
-      <h1>Thank you !</h1>
+      <h1>感谢观看</h1>
       ${meta.length ? `<div class="ppt-closing-meta">${meta.join(' &nbsp;|&nbsp; ')}</div>` : ''}
     </div>`
   }
