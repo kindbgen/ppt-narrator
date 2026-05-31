@@ -15,7 +15,7 @@
             <option value="技术分享">技术分享</option>
             <option value="项目汇报">项目汇报</option>
           </select>
-          <input v-model="startTime" @input="autoSave" type="datetime-local" class="text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-400 focus:outline-none px-1 w-36" />
+          <input v-model="startTime" @input="autoSave" type="date" class="text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-400 focus:outline-none px-1 w-36" />
           <span class="text-gray-300">|</span>
           <select v-model="currentTheme" @change="autoSave" class="text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-400 focus:outline-none px-1">
             <option v-for="t in themes" :key="t.value" :value="t">{{ t.label }}</option>
@@ -206,7 +206,6 @@ function syncContent() {
 }
 
 watch(() => store.currentPage, syncContent)
-watch(() => currentSlide.value.content, syncContent)
 
 function onContentEdit() {
   store.updateSlide(store.currentPage, { content: editableContent.value })
@@ -277,13 +276,13 @@ async function doSave() {
   if (cover?.layout === 'cover') {
     cover.author = speaker.value; cover.department = department.value
     cover.eventType = eventType.value
-    cover.startTime = startTime.value ? new Date(startTime.value).toLocaleString('zh-CN') : ''
+    cover.startTime = startTime.value ? new Date(startTime.value).toLocaleDateString('zh-CN') : ''
     cover.content = new AIService('mock', {})._renderCover(cover)
   }
   const last = store.slides[store.slides.length - 1]
   if (last?.layout === 'closing') {
     last.author = speaker.value; last.department = department.value
-    last.startTime = startTime.value ? new Date(startTime.value).toLocaleString('zh-CN') : ''
+    last.startTime = startTime.value ? new Date(startTime.value).toLocaleDateString('zh-CN') : ''
     last.content = new AIService('mock', {})._renderClosing(last)
   }
 

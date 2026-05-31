@@ -16,7 +16,29 @@
       </div>
 
       <!-- Narration Content -->
-      <div class="flex-1 overflow-y-auto p-4">
+      <div class="flex-1 overflow-y-auto">
+        <!-- Scrollable Page List -->
+        <div class="p-3 border-b border-gray-800">
+          <span class="text-xs text-gray-500 uppercase tracking-wide px-1">页面列表</span>
+          <div class="mt-2 space-y-0.5 max-h-48 overflow-y-auto">
+            <button
+              v-for="(slide, i) in slides"
+              :key="i"
+              @click="goToPage(i)"
+              :class="currentPage === i
+                ? 'bg-blue-500/20 border-blue-400/50 text-white'
+                : 'border-transparent text-gray-400 hover:bg-gray-800 hover:text-gray-200'"
+              class="w-full text-left px-2 py-1.5 border rounded text-xs flex items-center gap-2 transition-colors"
+            >
+              <span :class="currentPage === i ? 'bg-blue-400 text-gray-900' : 'bg-gray-700 text-gray-400'" class="w-5 h-5 rounded flex items-center justify-center text-xs font-bold shrink-0">{{ i + 1 }}</span>
+              <span class="truncate">{{ slide.title || `页面 ${i + 1}` }}</span>
+              <span class="text-gray-600 ml-auto shrink-0 text-xs">{{ slide.duration }}秒</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Current Narration -->
+        <div class="p-4">
         <!-- Slide Title -->
         <div class="mb-3">
           <span class="text-xs text-gray-500 uppercase tracking-wide">当前页面</span>
@@ -68,19 +90,7 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Page Thumbnails -->
-      <div class="shrink-0 border-t border-gray-800 px-3 py-2 flex gap-1.5 overflow-x-auto">
-        <button
-          v-for="(slide, i) in slides"
-          :key="i"
-          @click="goToPage(i)"
-          :class="currentPage === i
-            ? 'bg-blue-500/30 border-blue-400 text-white'
-            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'"
-          class="shrink-0 w-10 h-7 border rounded text-xs flex items-center justify-center transition-colors"
-        >{{ i + 1 }}</button>
+        </div>
       </div>
     </div>
 
