@@ -156,7 +156,10 @@ const themeConfig = {
   minimal:   { bg: 'bg-gradient-to-br from-white to-gray-50',        title: 'text-gray-900',    body: 'text-gray-600' },
   education: { bg: 'bg-gradient-to-br from-emerald-50 to-white',     title: 'text-emerald-800', body: 'text-gray-700' }
 }
-const themeClasses = computed(() => themeConfig.business)
+const themeClasses = computed(() => {
+  const saved = localStorage.getItem('ppt-theme')
+  return themeConfig[saved] || themeConfig.business
+})
 
 // --- Timer ---
 const timerColor = computed(() => {

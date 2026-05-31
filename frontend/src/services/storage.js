@@ -130,11 +130,11 @@ export async function getProject(id) {
   return { ...proj, slides }
 }
 
-export async function updateProjectMeta(id, { title, speaker, department, eventType, startTime }) {
+export async function updateProjectMeta(id, { title, speaker, department, eventType, startTime, templateStyle }) {
   if (!db) await initDB()
   const now = new Date().toISOString()
   try {
-    db.run('UPDATE projects SET title=?, speaker=?, department=?, event_type=?, start_time=?, updated_at=? WHERE id=?', [S(title,'未命名项目'), S(speaker,''), S(department,''), S(eventType,'内部技术讲座'), S(startTime,''), now, id])
+    db.run('UPDATE projects SET title=?, speaker=?, department=?, event_type=?, start_time=?, template_style=?, updated_at=? WHERE id=?', [S(title,'未命名项目'), S(speaker,''), S(department,''), S(eventType,'内部技术讲座'), S(startTime,''), S(templateStyle,'business'), now, id])
   } catch (e) {
     console.error('[Storage] updateProjectMeta error:', e)
     throw e

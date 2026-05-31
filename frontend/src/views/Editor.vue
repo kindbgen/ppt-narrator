@@ -16,6 +16,10 @@
             <option value="项目汇报">项目汇报</option>
           </select>
           <input v-model="startTime" @input="autoSave" type="datetime-local" class="text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-400 focus:outline-none px-1 w-36" />
+          <span class="text-gray-300">|</span>
+          <select v-model="currentTheme" @change="autoSave" class="text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-400 focus:outline-none px-1">
+            <option v-for="t in themes" :key="t.value" :value="t">{{ t.label }}</option>
+          </select>
         </div>
         <div class="flex items-center space-x-4">
           <span class="text-xs" :class="saveStatus.class">{{ saveStatus.text }}</span>
@@ -91,15 +95,15 @@
               <label class="text-sm font-medium text-gray-700">实时预览</label>
               <button @click="previewFull = true" class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded">⛶ 全屏</button>
             </div>
-            <div class="p-4 bg-gradient-to-br from-slate-800 to-blue-950 border rounded overflow-auto max-h-48 text-blue-100">
+            <div :class="[currentTheme.bg, currentTheme.body]" class="p-4 border rounded overflow-auto max-h-48">
               <div v-html="editableContent" class="prose prose-sm"></div>
             </div>
           </div>
 
           <!-- Fullscreen Preview Overlay -->
-          <div v-if="previewFull" class="fixed inset-0 z-50 bg-gradient-to-br from-slate-800 to-blue-950 flex items-center justify-center p-8" @click.self="previewFull = false">
-            <button @click="previewFull = false" class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300">✕</button>
-            <div class="w-full max-w-5xl max-h-full overflow-auto text-blue-100">
+          <div v-if="previewFull" :class="[currentTheme.bg, currentTheme.body]" class="fixed inset-0 z-50 flex items-center justify-center p-8" @click.self="previewFull = false">
+            <button @click="previewFull = false" class="absolute top-4 right-4 text-2xl hover:text-gray-300" :class="currentTheme.body">✕</button>
+            <div class="w-full max-w-5xl max-h-full overflow-auto">
               <div v-html="editableContent" class="slide-body"></div>
             </div>
           </div>
@@ -147,6 +151,20 @@ import { AIService } from '../services/ai-provider'
 
 const router = useRouter()
 const store = usePPTStore()
+
+// ---- Theme ----
+const themes = [
+  { value: 'business',  label: '商务', bg: 'bg-gradient-to-br from-slate-800 to-blue-950',         body: 'text-blue-100' },
+  { value: 'tech',      label: '科技', bg: 'bg-gradient-to-br from-gray-950 via-slate-900 to-indigo-950', body: 'text-slate-300' },
+  { value: 'minimal',   label: '简约', bg: 'bg-gradient-to-br from-white to-gray-50',              body: 'text-gray-600' },
+  { value: 'education', label: '教育', bg: 'bg-gradient-to-br from-emerald-50 to-white',           body: 'text-gray-700' },
+]
+const currentTheme = ref(themes.find(t => t.value === store.config.templateStyle) || themes[0])
+
+watch(currentTheme, (t) => {
+  store.setTemplateStyle(t.value)
+  autoSave()
+})
 
 const currentSlide = computed(() => {
   const s = store.currentSlide
@@ -241,7 +259,7 @@ let saveTimer = null
 
 async function ensureProject() {
   if (store.currentProjectId) return store.currentProjectId
-  const id = await createProject({ slides: store.slides, meta: { title: projectTitle.value, speaker: speaker.value, department: department.value, eventType: eventType.value, startTime: startTime.value, templateStyle: store.config.templateStyle, aiProvider: store.config.aiProvider } })
+  const id = await createProject({ slides: store.slides, meta: { title: projectTitle.value, speaker: speaker.value, department: department.value, eventType: eventType.value, startTime: startTime.value, templateStyle: currentTheme.value.value, aiProvider: store.config.aiProvider } })
   store.currentProjectId = id; store.projectTitle = projectTitle.value; store.speaker = speaker.value
   localStorage.setItem('ppt-active-project', id)
   return id
@@ -252,6 +270,8 @@ async function doSave() {
   store.projectTitle = projectTitle.value; store.speaker = speaker.value
   store.department = department.value; store.eventType = eventType.value
   store.startTime = startTime.value
+  store.config.templateStyle = currentTheme.value.value
+  localStorage.setItem('ppt-theme', currentTheme.value.value)
 
   const cover = store.slides[0]
   if (cover?.layout === 'cover') {
@@ -267,7 +287,7 @@ async function doSave() {
     last.content = new AIService('mock', {})._renderClosing(last)
   }
 
-  await updateProjectMeta(pid, { title: projectTitle.value, speaker: speaker.value, department: department.value, eventType: eventType.value, startTime: startTime.value || '' })
+  await updateProjectMeta(pid, { title: projectTitle.value, speaker: speaker.value, department: department.value, eventType: eventType.value, startTime: startTime.value || '', templateStyle: currentTheme.value.value })
   store.updateSlide(store.currentPage, { title: currentSlide.value.title, duration: currentSlide.value.duration, narration: currentSlide.value.narration })
   await updateSlide(pid, store.currentPage, { title: currentSlide.value.title, narration: currentSlide.value.narration, content: store.currentSlide.content, duration: currentSlide.value.duration, keywords: store.currentSlide.keywords, tips: store.currentSlide.tips, keyPoints: store.currentSlide.keyPoints })
 
@@ -307,10 +327,12 @@ onMounted(async () => {
           store.department = project.department || ''; store.eventType = project.event_type || '内部技术讲座'
           store.startTime = project.start_time || ''
           store.setTemplateStyle(project.template_style || 'business'); store.setAIProvider(project.ai_provider || 'gateway')
+          localStorage.setItem('ppt-theme', project.template_style || 'business')
           projectTitle.value = store.projectTitle; speaker.value = store.speaker
           department.value = store.department; eventType.value = store.eventType; startTime.value = store.startTime
           syncContent()
           document.title = (store.projectTitle || 'PPT 演讲助手编辑器') + ' — 编辑器'
+          currentTheme.value = themes.find(t => t.value === store.config.templateStyle) || themes[0]
         } else { router.replace('/') }
       } catch (e) { console.warn('Restore failed:', e); router.replace('/') }
     } else { router.replace('/') }
