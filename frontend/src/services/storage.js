@@ -54,6 +54,7 @@ function _migrate() {
   try { db.run('ALTER TABLE projects ADD COLUMN department TEXT DEFAULT \'\'') } catch {}
   try { db.run('ALTER TABLE projects ADD COLUMN event_type TEXT DEFAULT \'内部技术讲座\'') } catch {}
   try { db.run('ALTER TABLE projects ADD COLUMN start_time TEXT DEFAULT \'\'') } catch {}
+  try { db.run('ALTER TABLE projects ADD COLUMN pinned INTEGER DEFAULT 0') } catch {}
 }
 
 async function _persist() {
@@ -102,7 +103,7 @@ export async function createProject({ slides, meta = {} }) {
 
 export async function getProjectList() {
   if (!db) await initDB()
-  const result = db.exec('SELECT id,title,speaker,template_style,ai_provider,created_at,updated_at,(SELECT COUNT(*) FROM slides WHERE project_id=projects.id) AS slide_count FROM projects ORDER BY updated_at DESC')
+  const result = db.exec('SELECT id,title,speaker,template_style,ai_provider,pinned,created_at,updated_at,(SELECT COUNT(*) FROM slides WHERE project_id=projects.id) AS slide_count FROM projects ORDER BY updated_at DESC')
   if (!result.length) return []
   const { columns, values } = result[0]
   return values.map(row => { const o = {}; columns.forEach((c,i) => o[c]=row[i]); return o })
@@ -130,11 +131,21 @@ export async function getProject(id) {
   return { ...proj, slides }
 }
 
-export async function updateProjectMeta(id, { title, speaker, department, eventType, startTime, templateStyle }) {
+export async function updateProjectMeta(id, { title, speaker, department, eventType, startTime, templateStyle, pinned }) {
   if (!db) await initDB()
   const now = new Date().toISOString()
   try {
-    db.run('UPDATE projects SET title=?, speaker=?, department=?, event_type=?, start_time=?, template_style=?, updated_at=? WHERE id=?', [S(title,'未命名项目'), S(speaker,''), S(department,''), S(eventType,'内部技术讲座'), S(startTime,''), S(templateStyle,'business'), now, id])
+    const sets = []; const vals = []
+    if (title !== undefined) { sets.push('title=?'); vals.push(S(title, '未命名项目')) }
+    if (speaker !== undefined) { sets.push('speaker=?'); vals.push(S(speaker, '')) }
+    if (department !== undefined) { sets.push('department=?'); vals.push(S(department, '')) }
+    if (eventType !== undefined) { sets.push('event_type=?'); vals.push(S(eventType, '内部技术讲座')) }
+    if (startTime !== undefined) { sets.push('start_time=?'); vals.push(S(startTime, '')) }
+    if (templateStyle !== undefined) { sets.push('template_style=?'); vals.push(S(templateStyle, 'business')) }
+    if (pinned !== undefined) { sets.push('pinned=?'); vals.push(pinned ? 1 : 0) }
+    sets.push('updated_at=?'); vals.push(now)
+    vals.push(id)
+    db.run(`UPDATE projects SET ${sets.join(',')} WHERE id=?`, vals)
   } catch (e) {
     console.error('[Storage] updateProjectMeta error:', e)
     throw e
