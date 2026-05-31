@@ -4,15 +4,29 @@
     <header class="bg-white shadow-sm border-b sticky top-0 z-10">
       <div class="flex items-center justify-between px-4 py-3">
         <div class="flex items-center space-x-4">
-          <button @click="goBack" class="text-gray-600 hover:text-gray-900">
+          <button @click="goBack" class="text-gray-600 hover:text-gray-900 shrink-0">
             ← 返回
           </button>
-          <h1 class="text-xl font-semibold">PPT编辑器</h1>
+          <input
+            v-model="projectTitle"
+            @change="saveMeta"
+            class="text-lg font-semibold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-400 focus:outline-none px-1 w-48"
+            placeholder="未命名项目"
+          />
+          <input
+            v-model="speaker"
+            @change="saveMeta"
+            class="text-sm text-gray-500 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-400 focus:outline-none px-1 w-32"
+            placeholder="演讲者"
+          />
         </div>
         <div class="flex items-center space-x-4">
           <span class="text-sm text-gray-600">
             {{ store.currentPage + 1 }} / {{ store.totalPages }}
           </span>
+          <button @click="saveAll" class="px-3 py-1.5 bg-green-500 text-white rounded text-sm hover:bg-green-600">
+            💾 保存
+          </button>
           <button @click="startPresentation" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
             开始演示
           </button>
@@ -139,9 +153,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePPTStore } from '../stores/ppt'
+import { updateProjectMeta, updateSlide, updateProjectSlides, createProject } from '../services/storage'
 
 const router = useRouter()
 const store = usePPTStore()
@@ -159,7 +174,11 @@ const currentSlide = computed(() => {
   }
 })
 
+const projectTitle = ref(store.projectTitle)
+const speaker = ref(store.speaker)
 const slideRefs = ref([])
+
+let saveTimer = null
 
 function updateCurrentSlide() {
   store.updateSlide(store.currentPage, {
@@ -167,6 +186,75 @@ function updateCurrentSlide() {
     duration: currentSlide.value.duration,
     narration: currentSlide.value.narration
   })
+
+  // Debounced save to SQLite
+  if (store.currentProjectId) {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      saveCurrentSlide()
+    }, 800)
+  }
+}
+
+async function saveCurrentSlide() {
+  if (!store.currentProjectId) return  // 静默跳过，等手动保存创建项目
+  try {
+    await updateSlide(store.currentProjectId, store.currentPage, {
+      title: store.currentSlide.title,
+      narration: store.currentSlide.narration,
+      content: store.currentSlide.content,
+      duration: store.currentSlide.duration,
+      keywords: store.currentSlide.keywords,
+      tips: store.currentSlide.tips,
+      keyPoints: store.currentSlide.keyPoints
+    })
+  } catch (e) {
+    console.warn('Auto-save slide failed:', e)
+  }
+}
+
+async function saveMeta() {
+  store.projectTitle = projectTitle.value
+  store.speaker = speaker.value
+  if (!store.currentProjectId) return  // 静默跳过，等手动保存创建项目
+  try {
+    await updateProjectMeta(store.currentProjectId, {
+      title: projectTitle.value,
+      speaker: speaker.value
+    })
+  } catch (e) {
+    console.warn('Save meta failed:', e)
+  }
+}
+
+async function saveAll() {
+  try {
+    if (!store.currentProjectId) {
+      // 创建新项目
+      const id = await createProject({
+        slides: store.slides,
+        meta: {
+          title: projectTitle.value,
+          speaker: speaker.value,
+          templateStyle: store.config.templateStyle,
+          aiProvider: store.config.aiProvider
+        }
+      })
+      store.currentProjectId = id
+      store.projectTitle = projectTitle.value
+      store.speaker = speaker.value
+    } else {
+      await updateProjectMeta(store.currentProjectId, {
+        title: projectTitle.value,
+        speaker: speaker.value
+      })
+      await updateProjectSlides(store.currentProjectId, store.slides)
+    }
+    alert('保存成功！')
+  } catch (e) {
+    console.error('Save all failed:', e)
+    alert('保存失败: ' + e.message)
+  }
 }
 
 function goBack() {

@@ -5,6 +5,11 @@ export const usePPTStore = defineStore('ppt', {
     // PPT数据
     slides: [],
     currentPage: 0,
+    currentProjectId: null,
+
+    // 项目元数据
+    projectTitle: '未命名项目',
+    speaker: '',
 
     // 演示状态
     isPresenting: false,

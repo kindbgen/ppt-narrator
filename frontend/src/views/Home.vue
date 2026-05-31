@@ -242,6 +242,48 @@
         </div>
       </section>
 
+      <!-- 历史项目 -->
+      <section class="mb-8">
+        <button
+          @click="showHistory = !showHistory"
+          class="flex items-center gap-2 text-xl font-semibold text-gray-800 mb-4 hover:text-blue-600"
+        >
+          <span>{{ showHistory ? '▼' : '▶' }}</span>
+          📂 历史项目
+          <span class="text-sm text-gray-400 font-normal">({{ projectList.length }})</span>
+        </button>
+
+        <div v-if="showHistory" class="space-y-3">
+          <p v-if="projectList.length === 0" class="text-gray-500 text-sm py-4 text-center">
+            暂无保存的项目
+          </p>
+          <div
+            v-for="p in projectList"
+            :key="p.id"
+            class="bg-white rounded-lg border p-4 flex items-center justify-between hover:shadow transition-shadow"
+          >
+            <div class="flex-1 min-w-0">
+              <h3 class="font-medium text-gray-900 truncate">{{ p.title }}</h3>
+              <div class="flex gap-4 mt-1 text-xs text-gray-500">
+                <span v-if="p.speaker">👤 {{ p.speaker }}</span>
+                <span>📄 {{ p.slide_count }} 页</span>
+                <span>{{ formatDate(p.updated_at) }}</span>
+              </div>
+            </div>
+            <div class="flex gap-2 ml-4 shrink-0">
+              <button
+                @click="loadProject(p.id)"
+                class="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+              >📖 加载</button>
+              <button
+                @click="handleDeleteProject(p.id)"
+                class="px-3 py-1.5 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+              >🗑️ 删除</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Loading State -->
       <div v-if="isGenerating" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-8 text-center">
@@ -255,12 +297,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePPTStore } from '../stores/ppt'
 import { parser } from '../utils/parser'
 import { AIService } from '../services/ai-provider'
 import { DocmostClient } from '../services/docmost'
+import { createProject, getProjectList, getProject, deleteProject } from '../services/storage'
 
 const router = useRouter()
 const store = usePPTStore()
@@ -328,6 +371,11 @@ const gatewayModel = ref(import.meta.env.VITE_AI_GATEWAY_MODEL || '')
 // State
 const parsedContent = ref(null)
 const isGenerating = ref(false)
+const projectList = ref([])
+const showHistory = ref(false)
+
+// History state
+const currentProjectId = ref(null)
 
 // Computed
 const slideCount = computed(() => {
@@ -450,6 +498,24 @@ async function generatePPT() {
       store.setAIProvider(selectedAI.value)
       store.setTemplateStyle(selectedStyle.value)
 
+      // Auto-save to SQLite
+      try {
+        const id = await createProject({
+          slides: pptResult.slides,
+          meta: {
+            title: '未命名项目',
+            templateStyle: selectedStyle.value,
+            aiProvider: selectedAI.value,
+            rawContent: rawContent.value
+          }
+        })
+        currentProjectId.value = id
+        store.currentProjectId = id
+        console.log('[Storage] Project auto-saved with id:', id)
+      } catch (e) {
+        console.warn('Auto-save failed:', e)
+      }
+
       // Navigate to editor
       router.push('/editor')
     } else {
@@ -491,4 +557,66 @@ function quickTest() {
   console.log('[QuickTest] Content ready, generating PPT...')
   generatePPT()
 }
+
+// -------- 历史项目 --------
+
+function formatDate(isoStr) {
+  if (!isoStr) return ''
+  const d = new Date(isoStr)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+async function refreshProjectList() {
+  try {
+    projectList.value = await getProjectList()
+  } catch (e) {
+    console.warn('Failed to load project list:', e)
+  }
+}
+
+async function loadProject(id) {
+  try {
+    const project = await getProject(id)
+    if (!project) {
+      alert('项目不存在')
+      return
+    }
+    store.setSlides(project.slides)
+    store.setTemplateStyle(project.template_style || 'business')
+    store.setAIProvider(project.ai_provider || 'gateway')
+    store.currentProjectId = project.id
+    store.projectTitle = project.title || '未命名项目'
+    store.speaker = project.speaker || ''
+    currentProjectId.value = project.id
+
+    // Restore raw content if available
+    if (project.raw_content) {
+      rawContent.value = project.raw_content
+    }
+
+    router.push('/editor')
+  } catch (e) {
+    console.error('Load project error:', e)
+    alert('加载项目失败: ' + e.message)
+  }
+}
+
+async function handleDeleteProject(id) {
+  if (!confirm('确定要删除这个项目吗？此操作不可撤销。')) return
+  try {
+    await deleteProject(id)
+    if (currentProjectId.value === id) {
+      currentProjectId.value = null
+      store.currentProjectId = null
+    }
+    await refreshProjectList()
+  } catch (e) {
+    console.error('Delete project error:', e)
+    alert('删除失败: ' + e.message)
+  }
+}
+
+onMounted(() => {
+  refreshProjectList()
+})
 </script>
