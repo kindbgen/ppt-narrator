@@ -230,6 +230,7 @@ async function doSave() {
 
   saveStatus.text = '已自动保存'
   saveStatus.class = 'text-green-500'
+  document.title = (projectTitle.value || 'PPT 演讲助手编辑器') + ' — 编辑器'
   setTimeout(() => { if (saveStatus.text === '已自动保存') { saveStatus.text = '' } }, 2000)
 }
 
@@ -280,6 +281,7 @@ onMounted(async () => {
           store.setAIProvider(project.ai_provider || 'gateway')
           projectTitle.value = store.projectTitle
           speaker.value = store.speaker
+          document.title = (store.projectTitle || 'PPT 演讲助手编辑器') + ' — 编辑器'
         } else {
           router.replace('/')
         }

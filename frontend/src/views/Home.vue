@@ -619,6 +619,7 @@ async function handleDeleteProject(id) {
 }
 
 onMounted(() => {
+  document.title = 'PPT演讲助手'
   refreshProjectList()
 })
 </script>
