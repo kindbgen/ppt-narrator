@@ -21,6 +21,19 @@
         <div class="flex items-center gap-4">
           <span class="text-xs" :class="saveStatus.class">{{ saveStatus.text }}</span>
           <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">开始演示</button>
+          <div class="relative">
+            <button @click="showExport = !showExport" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">导出 ▼</button>
+            <div v-if="showExport" class="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 w-44">
+              <div class="px-3 py-1 text-xs text-gray-400">导出 PPT</div>
+              <button @click="exportPPT('pdf')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📄 PDF</button>
+              <button @click="exportPPT('markdown')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📝 Markdown</button>
+              <button @click="exportPPT('html')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">🌐 HTML</button>
+              <div class="border-t border-gray-100 mt-1 pt-1 px-3 py-1 text-xs text-gray-400">导出旁白</div>
+              <button @click="exportNarration('pdf')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📄 PDF</button>
+              <button @click="exportNarration('md')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📝 Markdown</button>
+              <button @click="exportNarration('html')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">🌐 HTML</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -161,6 +174,7 @@ const themes = [
 ]
 const currentTheme = ref(themes[0])
 const showMeta = ref(true)
+const showExport = ref(false)
 
 // ---- Current slide computed ----
 const currentSlide = computed(() => {
@@ -271,6 +285,135 @@ function autoSave() {
 }
 
 function goBack() { router.push('/') }
+
+// ---- Export ----
+function downloadBlob(content, filename, type = 'text/plain') {
+  const blob = new Blob([content], { type })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click()
+}
+
+function buildSlideHTML() {
+  return store.slides.map((s, i) => {
+    const title = s.layout !== 'cover' && s.layout !== 'section' && s.layout !== 'closing'
+      ? `<h2 class="slide-title">${s.title}</h2>` : ''
+    return `<div class="slide">${title}<div class="slide-content">${s.content}</div></div>`
+  }).join('\n')
+}
+
+function getThemeCSS() {
+  const theme = store.config.templateStyle || 'business'
+  // Mirror the presentation theme
+  const bg = theme === 'business' ? 'background: linear-gradient(135deg, #1e293b, #172554);' :
+    theme === 'tech' ? 'background: linear-gradient(135deg, #030712, #1e1b4b);' :
+    theme === 'minimal' ? 'background: #fff;' :
+    'background: linear-gradient(135deg, #ecfdf5, #fff);'
+  const textColor = theme === 'minimal' || theme === 'education' ? '#333' : '#e2e8f0'
+  const titleColor = theme === 'minimal' || theme === 'education' ? '#111' : '#fff'
+  return { bg, textColor, titleColor }
+}
+
+function exportPPT(format) {
+  showExport.value = false
+  const title = projectTitle.value || 'PPT演示文稿'
+  const { bg, textColor, titleColor } = getThemeCSS()
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;${bg}color:${textColor}}
+  .slide{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;${format==='pdf'?'page-break-after:always;':''}}
+  .slide:last-child{page-break-after:auto}
+  .slide-title{font-size:36px;font-weight:700;margin-bottom:24px;color:${titleColor}}
+  .slide-content{max-width:800px;width:100%}
+  /* PPT styles */
+  .ppt-cover{text-align:center;padding:60px 20px}
+  .ppt-cover-badge{display:inline-block;padding:6px 24px;border:2px solid currentColor;border-radius:999px;font-size:14px;letter-spacing:4px;text-transform:uppercase;margin-bottom:40px;opacity:.7}
+  .ppt-cover h1{font-size:48px;font-weight:700;line-height:1.2;margin-bottom:20px;color:${titleColor}}
+  .ppt-cover-sub{font-size:20px;opacity:.7;margin-bottom:16px}
+  .ppt-cover-meta{text-align:center;margin-top:30px;font-size:15px;opacity:.55;border-top:1px solid rgba(255,255,255,.15);padding-top:24px}
+  .ppt-section{text-align:center;padding:60px 20px}
+  .ppt-section-num{font-size:100px;font-weight:900;line-height:1;opacity:.12;margin-bottom:-30px}
+  .ppt-section h2{font-size:40px;font-weight:700;margin-bottom:12px;color:${titleColor}}
+  .ppt-list{list-style:none;padding:0;text-align:left;max-width:650px;margin:0 auto}
+  .ppt-list li{padding:12px 18px;margin-bottom:8px;border-left:4px solid rgba(255,255,255,.3);border-radius:0 8px 8px 0;font-size:20px;line-height:1.5}
+  .ppt-list li strong{display:inline-block;min-width:80px;margin-right:8px}
+  .ppt-data-grid{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;max-width:750px;margin:0 auto}
+  .ppt-data-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:28px 24px;min-width:140px;text-align:center}
+  .ppt-data-num{font-size:42px;font-weight:900;line-height:1.1;margin-bottom:6px}
+  .ppt-twocol{display:flex;align-items:stretch;gap:16px;max-width:750px;margin:0 auto}
+  .ppt-twocol-box{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 20px;text-align:left}
+  .ppt-twocol-box h4{font-size:17px;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid rgba(255,255,255,.15)}
+  .ppt-twocol-box ul{list-style:none;padding:0}
+  .ppt-twocol-box li{padding:6px 0;font-size:15px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .ppt-twocol-box li::before{content:'▸ ';opacity:.4}
+  .ppt-twocol-divider{display:flex;align-items:center;font-size:14px;font-weight:900;opacity:.4;padding:0 4px}
+  .ppt-table{width:100%;max-width:700px;margin:0 auto;border-collapse:separate;border-spacing:0;font-size:16px}
+  .ppt-table thead th{background:rgba(255,255,255,.15);padding:12px 16px;text-align:left;font-weight:700;font-size:14px;border-radius:8px 0 0 0}
+  .ppt-table thead th:last-child{border-radius:0 8px 0 0}
+  .ppt-table tbody td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .ppt-timeline{max-width:650px;margin:0 auto;text-align:left;padding-left:30px}
+  .ppt-timeline-item{display:flex;gap:18px;padding-bottom:24px;position:relative}
+  .ppt-timeline-item:not(:last-child)::after{content:'';position:absolute;left:17px;top:40px;bottom:0;width:2px;background:rgba(255,255,255,.15)}
+  .ppt-timeline-dot{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex-shrink:0}
+  .ppt-timeline-content strong{display:block;font-size:18px;margin-bottom:4px}
+  .ppt-callout{max-width:600px;margin:0 auto;text-align:left}
+  .ppt-callout blockquote{margin:0 0 16px 0;padding:28px 32px;background:rgba(255,255,255,.08);border-left:5px solid rgba(255,255,255,.3);border-radius:0 10px 10px 0;font-size:22px;font-style:italic;line-height:1.5;position:relative}
+  .ppt-callout blockquote::before{content:'"';position:absolute;top:-10px;left:12px;font-size:50px;opacity:.15;line-height:1}
+  .ppt-closing{text-align:center;padding:80px 20px}
+  .ppt-closing h1{font-size:48px;font-weight:300;letter-spacing:8px;margin-bottom:40px;color:${titleColor}}
+  .ppt-closing-meta{display:flex;justify-content:center;gap:32px;font-size:17px;opacity:.6;border-top:1px solid rgba(255,255,255,.12);padding-top:28px;flex-wrap:wrap}
+  @media print{body{margin:0;padding:0}.slide{min-height:100vh;page-break-after:always}}
+</style></head><body>${buildSlideHTML()}</body></html>`
+
+  if (format === 'pdf') {
+    const w = window.open('', '_blank', 'width=1000,height=800')
+    w.document.write(html); w.document.close()
+    setTimeout(() => w.print(), 400)
+  } else if (format === 'html') {
+    downloadBlob(html, `${title}.html`, 'text/html')
+  } else if (format === 'markdown') {
+    const md = store.slides.map((s, i) => `# ${i + 1}. ${s.title}\n\n${s.content.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')}\n`).join('\n\n---\n\n')
+    downloadBlob(md, `${title}.md`, 'text/markdown')
+  }
+}
+
+function exportNarration(format) {
+  showExport.value = false
+  const fileName = (projectTitle.value || 'PPT演示文稿') + '_旁白'
+  const { bg, textColor, titleColor } = getThemeCSS()
+  const meta = [speaker.value, department.value, eventType.value, startTime.value].filter(Boolean)
+
+  if (format === 'md') {
+    const pages = store.slides.map((s, i) => `### ${i + 1}. ${s.title}\n\n${s.narration || '无旁白内容'}\n`).join('\n')
+    downloadBlob(`# ${fileName}\n${meta.length ? `${meta.join(' | ')}\n` : ''}\n${pages}`, `${fileName}.md`, 'text/markdown')
+    return
+  }
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;${bg}color:${textColor};min-height:100vh}
+  .wrap{max-width:800px;margin:0 auto;padding:60px 40px}
+  h1{font-size:32px;font-weight:700;color:${titleColor};margin-bottom:8px}
+  .meta{font-size:15px;opacity:.6;margin-bottom:40px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.15)}
+  .page{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,.1);${format==='pdf'?'page-break-after:always;':''}}
+  .page:last-child{border-bottom:none;page-break-after:auto}
+  .page h3{font-size:18px;font-weight:600;color:${titleColor};margin-bottom:8px}
+  .page p{font-size:16px;line-height:1.8;opacity:.85;white-space:pre-wrap}
+  @media print{body{margin:0}.wrap{padding:30px}}
+</style></head><body><div class="wrap">
+<h1>${fileName}</h1>
+${meta.length ? `<div class="meta">${meta.join(' &nbsp;|&nbsp; ')}</div>` : ''}
+${store.slides.map((s, i) => `<div class="page"><h3>${i + 1}. ${s.title}</h3><p>${s.narration || '无旁白内容'}</p></div>`).join('\n')}
+</div></body></html>`
+
+  if (format === 'pdf') {
+    const w = window.open('', '_blank', 'width=1000,height=800')
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400) }
+  } else {
+    downloadBlob(html, `${fileName}.html`, 'text/html')
+  }
+}
 
 function startPresentation() {
   clearTimeout(saveTimer)
