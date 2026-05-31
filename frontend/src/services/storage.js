@@ -40,13 +40,20 @@ export async function initDB() {
     await _persist()
   }
 
+  _migrate()
   return db
 }
 
 function _createTables() {
-  db.run('CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL DEFAULT \'未命名项目\', speaker TEXT DEFAULT \'\', template_style TEXT DEFAULT \'business\', ai_provider TEXT DEFAULT \'gateway\', raw_content TEXT DEFAULT \'\', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)')
+  db.run('CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL DEFAULT \'未命名项目\', speaker TEXT DEFAULT \'\', department TEXT DEFAULT \'\', event_type TEXT DEFAULT \'内部技术讲座\', start_time TEXT DEFAULT \'\', template_style TEXT DEFAULT \'business\', ai_provider TEXT DEFAULT \'gateway\', raw_content TEXT DEFAULT \'\', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)')
   db.run('CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE, page_index INTEGER NOT NULL, title TEXT DEFAULT \'\', content TEXT DEFAULT \'\', layout TEXT DEFAULT \'content\', duration INTEGER DEFAULT 120, narration TEXT DEFAULT \'\', keywords TEXT DEFAULT \'[]\', tips TEXT DEFAULT \'[]\', key_points TEXT DEFAULT \'[]\', subtitle TEXT DEFAULT \'\', author TEXT DEFAULT \'\', number TEXT DEFAULT \'\', quote TEXT DEFAULT \'\')')
   db.run('PRAGMA foreign_keys = ON')
+}
+
+function _migrate() {
+  try { db.run('ALTER TABLE projects ADD COLUMN department TEXT DEFAULT \'\'') } catch {}
+  try { db.run('ALTER TABLE projects ADD COLUMN event_type TEXT DEFAULT \'内部技术讲座\'') } catch {}
+  try { db.run('ALTER TABLE projects ADD COLUMN start_time TEXT DEFAULT \'\'') } catch {}
 }
 
 async function _persist() {
@@ -64,8 +71,8 @@ export async function createProject({ slides, meta = {} }) {
 
   try {
     db.run(
-      'INSERT INTO projects (title, speaker, template_style, ai_provider, raw_content, created_at, updated_at) VALUES (?,?,?,?,?,?,?)',
-      [S(meta.title,'未命名项目'), S(meta.speaker,''), S(meta.templateStyle,'business'), S(meta.aiProvider,'gateway'), S(meta.rawContent,''), now, now]
+      'INSERT INTO projects (title, speaker, department, event_type, start_time, template_style, ai_provider, raw_content, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      [S(meta.title,'未命名项目'), S(meta.speaker,''), S(meta.department,''), S(meta.eventType,'内部技术讲座'), S(meta.startTime,''), S(meta.templateStyle,'business'), S(meta.aiProvider,'gateway'), S(meta.rawContent,''), now, now]
     )
     // Use exec to get last insert id (more reliable than run().lastInsertRowid)
     const idResult = db.exec('SELECT last_insert_rowid() AS id')
@@ -123,11 +130,11 @@ export async function getProject(id) {
   return { ...proj, slides }
 }
 
-export async function updateProjectMeta(id, { title, speaker }) {
+export async function updateProjectMeta(id, { title, speaker, department, eventType, startTime }) {
   if (!db) await initDB()
   const now = new Date().toISOString()
   try {
-    db.run('UPDATE projects SET title=?, speaker=?, updated_at=? WHERE id=?', [S(title,'未命名项目'), S(speaker,''), now, id])
+    db.run('UPDATE projects SET title=?, speaker=?, department=?, event_type=?, start_time=?, updated_at=? WHERE id=?', [S(title,'未命名项目'), S(speaker,''), S(department,''), S(eventType,'内部技术讲座'), S(startTime,''), now, id])
   } catch (e) {
     console.error('[Storage] updateProjectMeta error:', e)
     throw e

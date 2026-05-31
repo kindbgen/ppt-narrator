@@ -493,15 +493,26 @@ async function generatePPT() {
         slide.tips = narrationResult.tips || []
       }
 
-      // Save to store
-      store.setSlides(pptResult.slides)
+      // Save to store (add closing slide before saving)
+      const closingSlide = {
+        layout: 'closing',
+        title: '谢谢大家',
+        duration: 10,
+        content: '<div class="ppt-closing"><h1>Thank you !</h1><div class="ppt-closing-meta">演讲者 | 部门 | 时间</div></div>',
+        keyPoints: [],
+        narration: '谢谢大家！',
+        keywords: [],
+        tips: []
+      }
+      const allSlides = [...pptResult.slides, closingSlide]
+      store.setSlides(allSlides)
       store.setAIProvider(selectedAI.value)
       store.setTemplateStyle(selectedStyle.value)
 
       // Auto-save to SQLite
       try {
         const id = await createProject({
-          slides: pptResult.slides,
+          slides: allSlides,
           meta: {
             title: '未命名项目',
             templateStyle: selectedStyle.value,

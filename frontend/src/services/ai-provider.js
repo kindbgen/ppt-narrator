@@ -514,11 +514,20 @@ POINTS:
   // ------------------- HTML Renderers -------------------
 
   _renderCover(s) {
+    const meta = [s.author, s.department, s.eventType, s.startTime].filter(Boolean)
     return `<div class="ppt-cover">
       <div class="ppt-cover-badge">PRESENTATION</div>
       <h1>${s.title}</h1>
       ${s.subtitle ? `<p class="ppt-cover-sub">${s.subtitle}</p>` : ''}
-      ${s.author ? `<p class="ppt-cover-author">${s.author}</p>` : ''}
+      ${meta.length ? `<div class="ppt-cover-meta">${meta.join(' &nbsp;|&nbsp; ')}</div>` : ''}
+    </div>`
+  }
+
+  _renderClosing(s) {
+    const meta = [s.author, s.department, s.startTime].filter(Boolean)
+    return `<div class="ppt-closing">
+      <h1>Thank you !</h1>
+      ${meta.length ? `<div class="ppt-closing-meta">${meta.join(' &nbsp;|&nbsp; ')}</div>` : ''}
     </div>`
   }
 

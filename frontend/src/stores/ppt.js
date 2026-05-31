@@ -10,6 +10,9 @@ export const usePPTStore = defineStore('ppt', {
     // 项目元数据
     projectTitle: '未命名项目',
     speaker: '',
+    department: '',
+    eventType: '内部技术讲座',
+    startTime: '',
 
     // 演示状态
     isPresenting: false,
