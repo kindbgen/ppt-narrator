@@ -127,7 +127,7 @@ const sortedProjects = computed(() => {
   return list
 })
 
-function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
+function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
 function togglePin(p) { updateProjectMeta(p.id, { pinned: p.pinned ? 0 : 1 }).then(load) }
 async function rename(p) { menuId.value = null; renaming.value = p.id; renameText.value = p.title; await nextTick(); const el = Array.isArray(renameInput.value) ? renameInput.value[renameInput.value.length-1] : renameInput.value; if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) } }
 async function doRename(p) { if (renameText.value && renameText.value !== p.title) { await updateProjectMeta(p.id, { title: renameText.value }); await load() } renaming.value = null }

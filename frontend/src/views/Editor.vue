@@ -39,12 +39,12 @@
 
       <!-- ===== Metadata Panel (collapsible) ===== -->
       <div v-if="showMeta" class="px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-4 text-sm shrink-0">
-        <input v-model="speaker" @input="autoSave" placeholder="演讲者姓名" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-28 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-        <input v-model="department" @input="autoSave" placeholder="部门/公司" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-32 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-        <select v-model="eventType" @change="autoSave" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
+        <input v-model="speaker" @input="autoSaveAndPreview" placeholder="演讲者姓名" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-28 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+        <input v-model="department" @input="autoSaveAndPreview" placeholder="部门/公司" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-32 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+        <select v-model="eventType" @change="autoSaveAndPreview" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
           <option value="内部技术讲座">内部技术讲座</option><option value="内部培训">内部培训</option><option value="技术分享">技术分享</option><option value="项目汇报">项目汇报</option>
         </select>
-        <input v-model="startTime" @input="autoSave" type="date" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+        <input v-model="startTime" @input="autoSaveAndPreview" type="date" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
         <span class="text-gray-300">|</span>
         <select v-model="currentTheme" @change="autoSave" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
           <option v-for="t in themes" :key="t.value" :value="t">{{ t.label }}</option>
@@ -238,6 +238,26 @@ let saving = false
 
 function onTitleEdit() { store.projectTitle = projectTitle.value; autoSave() }
 
+// Real-time update: regenerate cover/closing content when metadata changes
+function updateSlidePreviews() {
+  const cover = store.slides[0]
+  if (cover?.layout === 'cover') {
+    cover.author = speaker.value; cover.department = department.value
+    cover.eventType = eventType.value; cover.startTime = startTime.value || ''
+    cover.content = new AIService('mock', {})._renderCover(cover)
+  }
+  const last = store.slides[store.slides.length - 1]
+  if (last?.layout === 'closing') {
+    last.author = speaker.value; last.department = department.value
+    last.startTime = startTime.value || ''
+    last.content = new AIService('mock', {})._renderClosing(last)
+  }
+  // Sync the editable content if currently viewing cover or closing
+  if (store.currentPage === 0 || store.currentPage === store.slides.length - 1) {
+    syncContent()
+  }
+}
+
 async function ensureProject() {
   if (store.currentProjectId) return store.currentProjectId
   const id = await createProject({ slides: store.slides, meta: { title: projectTitle.value, speaker: speaker.value, department: department.value, eventType: eventType.value, startTime: startTime.value, templateStyle: currentTheme.value.value, aiProvider: store.config.aiProvider } })
@@ -256,13 +276,13 @@ async function doSave() {
   const cover = store.slides[0]
   if (cover?.layout === 'cover') {
     cover.author = speaker.value; cover.department = department.value; cover.eventType = eventType.value
-    cover.startTime = startTime.value ? new Date(startTime.value).toLocaleDateString('zh-CN') : ''
+    cover.startTime = startTime.value ? startTime.value : ''
     cover.content = new AIService('mock', {})._renderCover(cover)
   }
   const last = store.slides[store.slides.length - 1]
   if (last?.layout === 'closing') {
     last.author = speaker.value; last.department = department.value
-    last.startTime = startTime.value ? new Date(startTime.value).toLocaleDateString('zh-CN') : ''
+    last.startTime = startTime.value ? startTime.value : ''
     last.content = new AIService('mock', {})._renderClosing(last)
   }
 
@@ -282,6 +302,11 @@ function autoSave() {
   clearTimeout(saveTimer)
   saveStatus.text = '保存中...'; saveStatus.class = 'text-gray-400'
   saveTimer = setTimeout(() => doSave().catch(e => { console.warn('Save failed:', e); saveStatus.text = '失败'; saveStatus.class = 'text-red-500' }), 600)
+}
+
+function autoSaveAndPreview() {
+  updateSlidePreviews()
+  autoSave()
 }
 
 function goBack() { router.push('/') }
