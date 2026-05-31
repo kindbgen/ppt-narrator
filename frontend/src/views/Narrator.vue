@@ -236,6 +236,7 @@ function prevSlide() {
 
 // --- Lifecycle ---
 onMounted(() => {
+  document.title = 'PPT演讲助手'
   // Restore data from localStorage
   const saved = localStorage.getItem('ppt-slides')
   if (saved) {

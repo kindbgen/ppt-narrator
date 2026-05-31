@@ -511,6 +511,7 @@ async function generatePPT() {
         })
         currentProjectId.value = id
         store.currentProjectId = id
+        localStorage.setItem('ppt-active-project', id)
         console.log('[Storage] Project auto-saved with id:', id)
       } catch (e) {
         console.warn('Auto-save failed:', e)
@@ -587,6 +588,7 @@ async function loadProject(id) {
     store.currentProjectId = project.id
     store.projectTitle = project.title || '未命名项目'
     store.speaker = project.speaker || ''
+    localStorage.setItem('ppt-active-project', project.id)
     currentProjectId.value = project.id
 
     // Restore raw content if available

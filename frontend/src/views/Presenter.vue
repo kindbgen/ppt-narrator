@@ -34,15 +34,18 @@ onMounted(() => {
   const saved = localStorage.getItem('ppt-slides')
   if (saved && slides.value.length === 0) {
     try { slides.value = JSON.parse(saved) } catch (e) { /* ignore */ }
+    document.title = slides.value[0]?.title || 'PPT 演讲助手'
   }
 
   sync.on('PAGE_CHANGE', (data) => {
     currentPage.value = data.pageIndex
+    document.title = slides.value[data.pageIndex]?.title || 'PPT 演讲助手'
   })
 
   sync.on('PRESENTATION_START', (data) => {
     slides.value = data.slides
     currentPage.value = 0
+    document.title = data.slides[0]?.title || 'PPT 演讲助手'
   })
 })
 
