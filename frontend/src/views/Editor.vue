@@ -144,7 +144,7 @@
 import { computed, ref, reactive, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePPTStore } from '../stores/ppt'
-import { updateProjectMeta, updateSlide, createProject, getProject } from '../services/storage'
+import { updateProjectMeta, updateProjectSlides, createProject, getProject } from '../services/storage'
 import { AIService } from '../services/ai-provider'
 import AppShell from '../components/layout/AppShell.vue'
 
@@ -220,6 +220,7 @@ const eventType = ref(store.eventType)
 const startTime = ref(store.startTime)
 const saveStatus = reactive({ text: '', class: 'text-gray-400' })
 let saveTimer = null
+let saving = false
 
 function onTitleEdit() { store.projectTitle = projectTitle.value; autoSave() }
 
@@ -230,7 +231,10 @@ async function ensureProject() {
 }
 
 async function doSave() {
-  const pid = await ensureProject()
+  if (saving) return
+  saving = true
+  try {
+    const pid = await ensureProject()
   Object.assign(store, { projectTitle: projectTitle.value, speaker: speaker.value, department: department.value, eventType: eventType.value, startTime: startTime.value })
   store.config.templateStyle = currentTheme.value.value
   localStorage.setItem('ppt-theme', currentTheme.value.value)
@@ -250,13 +254,14 @@ async function doSave() {
 
   await updateProjectMeta(pid, { title: projectTitle.value, speaker: speaker.value, department: department.value, eventType: eventType.value, startTime: startTime.value || '', templateStyle: currentTheme.value.value })
   store.updateSlide(store.currentPage, { title: currentSlide.value.title, duration: currentSlide.value.duration, narration: currentSlide.value.narration })
-  await updateSlide(pid, store.currentPage, { title: currentSlide.value.title, narration: currentSlide.value.narration, content: store.currentSlide.content, duration: currentSlide.value.duration, keywords: store.currentSlide.keywords, tips: store.currentSlide.tips, keyPoints: store.currentSlide.keyPoints })
+  await updateProjectSlides(pid, store.slides)
 
   // Sync sidebar
   shellRef.value?.load()
   saveStatus.text = '已保存'; saveStatus.class = 'text-green-500'
   document.title = (projectTitle.value || 'PPT 演讲助手编辑器') + ' — 编辑器'
   setTimeout(() => { if (saveStatus.text === '已保存') saveStatus.text = '' }, 2000)
+  } finally { saving = false }
 }
 
 function autoSave() {
