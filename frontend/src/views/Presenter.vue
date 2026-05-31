@@ -1,7 +1,7 @@
 <template>
   <div :class="themeClasses.bg" class="fixed inset-0 flex items-center justify-center p-12 transition-colors duration-500">
     <div class="w-full max-w-5xl text-center">
-      <h2 :class="themeClasses.title" class="text-5xl font-bold mb-8">{{ currentSlide.title }}</h2>
+      <h2 v-if="currentSlide.layout !== 'cover' && currentSlide.layout !== 'section'" :class="themeClasses.title" class="text-5xl font-bold mb-8">{{ currentSlide.title }}</h2>
       <div :class="themeClasses.body" class="text-2xl leading-relaxed slide-body" v-html="currentSlide.content"></div>
     </div>
   </div>

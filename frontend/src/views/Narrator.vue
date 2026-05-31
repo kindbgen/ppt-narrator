@@ -89,7 +89,7 @@
       <!-- PPT Preview Area -->
       <div :class="themeClasses.bg" class="flex-1 flex items-center justify-center p-6 transition-colors duration-500">
         <div class="w-full max-w-3xl text-center">
-          <h2 :class="themeClasses.title" class="text-3xl font-bold mb-4">{{ currentSlide.title }}</h2>
+          <h2 v-if="currentSlide.layout !== 'cover' && currentSlide.layout !== 'section'" :class="themeClasses.title" class="text-3xl font-bold mb-4">{{ currentSlide.title }}</h2>
           <div :class="themeClasses.body" class="text-lg leading-relaxed slide-body" v-html="currentSlide.content"></div>
         </div>
       </div>
