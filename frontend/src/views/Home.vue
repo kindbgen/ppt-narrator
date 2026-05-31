@@ -1,7 +1,8 @@
 <template>
   <AppShell ref="shell" :activeId="currentProjectId" @newProject="newProject" @projectDeleted="onDeleted">
     <div class="max-w-2xl mx-auto py-12 px-8">
-      <h2 class="text-2xl font-bold mb-8">新建 PPT</h2>
+      <h2 class="text-2xl font-bold mb-2">AI 智能生成 PPT 和旁白</h2>
+      <p class="text-sm text-gray-400 mb-8">输入文档内容，AI 自动分析结构、生成精美 PPT 和演讲旁白</p>
 
       <div v-if="!aiReady" class="mb-8 p-4 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-700">
         ⚠️ 请先在左下角「⚙️ 设置」中配置 AI 服务
@@ -32,15 +33,57 @@
       <!-- Step 2: Style -->
       <section class="mb-10">
         <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">PPT 风格</h3>
-        <div class="grid grid-cols-4 gap-3">
-          <button v-for="s in styles" :key="s.key" @click="selStyle = s.key" :class="selStyle === s.key ? 'ring-2 ring-gray-900 bg-gray-50' : 'border border-gray-200 hover:border-gray-300'" class="rounded-xl p-3 text-center transition-all">
-            <div :class="s.preview" class="h-16 rounded-lg mb-2 flex items-end p-2"><span :class="s.text" class="text-xs font-medium">标题示例</span></div>
-            <div class="text-sm font-medium">{{ s.label }}</div>
+        <div class="grid grid-cols-2 gap-3">
+          <button v-for="s in styles" :key="s.key" @click="selStyle = s.key"
+            :class="selStyle === s.key ? 'ring-2 ring-gray-900 ring-offset-1' : 'border border-gray-200 hover:border-gray-300'"
+            class="rounded-xl overflow-hidden transition-all text-left bg-white">
+
+            <!-- Preview: Title slide -->
+            <div :class="s.bg" class="h-20 flex items-center justify-center relative">
+              <div class="text-center">
+                <div :class="s.subColor" class="text-[7px] uppercase tracking-widest opacity-50 mb-1">PRESENTATION</div>
+                <div :class="s.titleColor" class="text-xs font-bold">标题示例</div>
+              </div>
+            </div>
+
+            <!-- Preview: Content pages (3 mini slides) -->
+            <div class="flex gap-px bg-gray-200">
+              <div :class="s.cardBg" class="flex-1 h-10 p-1.5 flex items-center">
+                <div class="w-full">
+                  <div :class="s.cardText" class="text-[6px] font-medium truncate">● 要点一</div>
+                  <div :class="s.cardSub" class="text-[5px] mt-0.5 truncate">要点二</div>
+                </div>
+              </div>
+              <div :class="s.cardBg" class="flex-1 h-10 p-1.5 flex items-center">
+                <div class="w-full">
+                  <div class="flex gap-1">
+                    <div :class="s.statBg" class="flex-1 text-center py-0.5 rounded">
+                      <div :class="s.titleColor" class="text-[7px] font-bold">70%</div>
+                      <div :class="s.cardSub" class="text-[4px]">转化率</div>
+                    </div>
+                    <div :class="s.statBg" class="flex-1 text-center py-0.5 rounded">
+                      <div :class="s.titleColor" class="text-[7px] font-bold">3x</div>
+                      <div :class="s.cardSub" class="text-[4px]">效率</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div :class="s.cardBg" class="flex-1 h-10 p-1.5 flex items-center">
+                <div class="w-full text-center">
+                  <div :class="s.titleColor" class="text-[6px] font-medium mt-1">谢谢大家</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-3 py-2">
+              <div class="text-sm font-medium text-gray-900">{{ s.label }}</div>
+              <div class="text-xs text-gray-400">{{ s.desc }}</div>
+            </div>
           </button>
         </div>
       </section>
 
-      <button @click="generate" :disabled="!canGen || generating" class="w-full py-3.5 bg-gray-900 text-white rounded-xl text-base font-medium disabled:opacity-30 hover:bg-gray-800 transition-colors">{{ generating ? '生成中...' : '🚀 生成 PPT 和旁白' }}</button>
+      <button @click="generate" :disabled="!canGen || generating" class="w-full py-3.5 bg-gray-900 text-white rounded-xl text-base font-medium disabled:opacity-30 hover:bg-gray-800 transition-colors">{{ generating ? 'AI 正在生成...' : '🤖 AI 智能生成 PPT 和旁白' }}</button>
       <button @click="quickTest" class="w-full mt-3 py-2.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">⚡ 一键快速测试（内置模版，无需配置AI）</button>
 
       <div v-if="generating" class="fixed inset-0 z-50 bg-white/80 flex items-center justify-center">
@@ -70,10 +113,18 @@ const currentProjectId = ref(null)
 
 const methods = [{ key: 'paste', label: '手动输入' }, { key: 'docmost', label: 'Wiki 导入' }, { key: 'upload', label: '上传文件' }]
 const styles = [
-  { key: 'business', label: '商务', preview: 'bg-gradient-to-br from-blue-700 to-blue-900', text: 'text-white' },
-  { key: 'tech', label: '科技', preview: 'bg-gradient-to-br from-gray-900 to-indigo-950', text: 'text-cyan-300' },
-  { key: 'minimal', label: '简约', preview: 'bg-gradient-to-br from-gray-100 to-white', text: 'text-gray-800' },
-  { key: 'education', label: '教育', preview: 'bg-gradient-to-br from-emerald-100 to-white', text: 'text-emerald-800' }
+  { key: 'business', label: '商务', desc: '简洁专业 · 蓝色主调',
+    bg: 'bg-gradient-to-br from-slate-800 to-blue-950', titleColor: 'text-white', subColor: 'text-blue-200',
+    cardBg: 'bg-slate-800', cardText: 'text-blue-200', cardSub: 'text-blue-400/40', statBg: 'bg-white/5' },
+  { key: 'tech', label: '科技', desc: '现代动感 · 深色背景',
+    bg: 'bg-gradient-to-br from-gray-950 via-slate-900 to-indigo-950', titleColor: 'text-cyan-300', subColor: 'text-cyan-400/50',
+    cardBg: 'bg-gray-900', cardText: 'text-cyan-300', cardSub: 'text-cyan-500/30', statBg: 'bg-white/5' },
+  { key: 'minimal', label: '简约', desc: '清爽优雅 · 浅色调',
+    bg: 'bg-gradient-to-br from-gray-100 to-white', titleColor: 'text-gray-800', subColor: 'text-gray-400',
+    cardBg: 'bg-white', cardText: 'text-gray-700', cardSub: 'text-gray-300', statBg: 'bg-gray-50' },
+  { key: 'education', label: '教育', desc: '清晰易读 · 高对比度',
+    bg: 'bg-gradient-to-br from-emerald-100 to-white', titleColor: 'text-emerald-800', subColor: 'text-emerald-500/50',
+    cardBg: 'bg-white', cardText: 'text-emerald-700', cardSub: 'text-emerald-300', statBg: 'bg-emerald-50' }
 ]
 
 const canGen = computed(() => rawContent.value)
