@@ -194,10 +194,36 @@ class MockProvider extends AIProvider {
         'DURATION: 15',
         '',
         '###PAGE###',
+        'LAYOUT: toc',
+        'TITLE: 目录',
+        'DURATION: 20',
+        'ITEM: 01. 项目背景与痛点',
+        'ITEM: 02. 痛点数据',
+        'ITEM: 03. 核心功能',
+        'ITEM: 04. 传统方式 vs PPT助手',
+        'ITEM: 05. 技术栈与开发路线',
+        '',
+        '###PAGE###',
         'LAYOUT: section',
         'NUMBER: 01',
-        'TITLE: 项目背景',
+        'TITLE: 项目背景与痛点',
         'SUBTITLE: 从痛点到解决方案',
+        'DURATION: 10',
+        '',
+        '###PAGE###',
+        'LAYOUT: content',
+        'TITLE: 项目背景',
+        'DURATION: 60',
+        'POINTS:',
+        '- 传统PPT制作：工程师每周花费3小时以上',
+        '- 演讲准备：需要手动撰写旁白和提示',
+        '- 缺乏双屏工具：演示与旁白无法同步',
+        '',
+        '###PAGE###',
+        'LAYOUT: section',
+        'NUMBER: 02',
+        'TITLE: 痛点数据',
+        'SUBTITLE: 数据揭示的市场现状',
         'DURATION: 10',
         '',
         '###PAGE###',
@@ -210,6 +236,13 @@ class MockProvider extends AIProvider {
         '- 3x: AI辅助后效率提升倍数',
         '',
         '###PAGE###',
+        'LAYOUT: section',
+        'NUMBER: 03',
+        'TITLE: 核心功能',
+        'SUBTITLE: 一站式PPT智能解决方案',
+        'DURATION: 10',
+        '',
+        '###PAGE###',
         'LAYOUT: content',
         'TITLE: 核心功能',
         'DURATION: 90',
@@ -218,6 +251,13 @@ class MockProvider extends AIProvider {
         '- AI生成：自动拆分页面、生成演讲旁白',
         '- 双屏演示：演示屏+旁白屏实时同步',
         '- 倒计时：每页独立计时提醒',
+        '',
+        '###PAGE###',
+        'LAYOUT: section',
+        'NUMBER: 04',
+        'TITLE: 传统方式 vs PPT助手',
+        'SUBTITLE: 新老方案对比分析',
+        'DURATION: 10',
         '',
         '###PAGE###',
         'LAYOUT: twocol',
@@ -231,6 +271,13 @@ class MockProvider extends AIProvider {
         '- AI自动生成，几分钟完成',
         '- 智能旁白，轻松脱稿',
         '- 双屏同步，流畅自信',
+        '',
+        '###PAGE###',
+        'LAYOUT: section',
+        'NUMBER: 05',
+        'TITLE: 技术栈与开发路线',
+        'SUBTITLE: 技术选型与实施路径',
+        'DURATION: 10',
         '',
         '###PAGE###',
         'LAYOUT: table',
@@ -298,7 +345,7 @@ export class AIService {
     this.provider = this._createProvider(type, config)
   }
 
-  async generatePPT(wikiContent, style) {
+  async generatePPT(wikiContent, style, options = {}) {
     const styleGuide = {
       business: '商务专业风：深蓝主色(#1e3a5f)，白色背景，简洁排版。数据驱动。',
       tech: '科技现代风：深色背景(#0f172a)，青色/紫色高亮(#06b6d4)。适合技术演讲。',
@@ -306,7 +353,14 @@ export class AIService {
       education: '教育清晰风：浅绿/白背景，深绿标题(#065f46)。结构清晰。'
     }
 
-    const prompt = `你是PPT设计专家。根据文档生成PPT，用 ###PAGE### 分隔。要求排版丰富，不单调。
+    const pageCountDirective = options.pageCount
+      ? `\n页数要求：请生成大约 ${options.pageCount.min} 到 ${options.pageCount.max} 页正文内容（不包含封面和目录页）。\n`
+      : ''
+    const tocDirective = options.includeToc
+      ? `\n必须在封面(cover)之后紧接着生成一页目录(toc)，列出后续所有章节标题和对应页码。\n`
+      : ''
+
+    const prompt = `你是PPT设计专家。根据文档生成PPT，用 ###PAGE### 分隔。要求排版丰富，不单调。${pageCountDirective}${tocDirective}
 
 风格：${styleGuide[style] || styleGuide.business}
 
@@ -323,7 +377,15 @@ SUBTITLE: 副标题
 AUTHOR: 演讲人
 DURATION: 15
 
-2. section — 章节分隔页
+2. toc — 目录页（封面之后，只能用一次）
+###PAGE###
+LAYOUT: toc
+TITLE: 目录
+DURATION: 20
+ITEM: 01. 章节名称
+ITEM: 02. 章节名称
+
+3. section — 章节分隔页
 ###PAGE###
 LAYOUT: section
 NUMBER: 01
@@ -331,7 +393,7 @@ TITLE: 章节名称
 SUBTITLE: 一句话概括
 DURATION: 10
 
-3. content — 正文（默认，最常用）
+4. content — 正文（默认，最常用）
 ###PAGE###
 LAYOUT: content
 TITLE: 页面标题
@@ -340,7 +402,7 @@ POINTS:
 - 要点：解释说明
 - 要点：解释说明
 
-4. data — 数据突出（有数字时用）
+5. data — 数据突出（有数字时用）
 ###PAGE###
 LAYOUT: data
 TITLE: 核心数据
@@ -349,7 +411,7 @@ POINTS:
 - 88%: Agent 项目未能进入生产
 - 10,000+: 月增安全漏洞
 
-5. twocol — 左右对比
+6. twocol — 左右对比
 ###PAGE###
 LAYOUT: twocol
 TITLE: 对比标题
@@ -361,7 +423,7 @@ RIGHT:
 - 方案B优势1
 - 方案B优势2
 
-6. table — 表格（有多行对比数据时）
+7. table — 表格（有多行对比数据时）
 ###PAGE###
 LAYOUT: table
 TITLE: 表格标题
@@ -370,7 +432,7 @@ HEADER: 列1 | 列2 | 列3
 ROW: 数据1 | 数据2 | 数据3
 ROW: 数据1 | 数据2 | 数据3
 
-7. timeline — 时间线/步骤
+8. timeline — 时间线/步骤
 ###PAGE###
 LAYOUT: timeline
 TITLE: 演进历程
@@ -379,7 +441,7 @@ STEP: 2022: Prompt Engineering：通过提示词让AI交付结果
 STEP: 2025: Context Engineering：RAG和动态上下文
 STEP: 2026: Harness Engineering：约束反馈控制
 
-8. callout — 重点强调
+9. callout — 重点强调
 ###PAGE###
 LAYOUT: callout
 TITLE: 核心洞察
@@ -391,7 +453,10 @@ POINTS:
 
 规则：
 - 封面(cover)只用一次，放在第一页
-- 每个章节用 section 作为分隔
+- 封面(cover)后紧接着放一页目录(toc)，列出后续所有章节标题（每个ITEM对应一个章节）
+- 严格按照目录(toc)的顺序组织内容：每个目录条目对应一个 section 分隔页（带序号），后面是该章节的正文内容
+- section 的 NUMBER 必须与目录中对应的 ITEM 序号一致
+- 目录有几条，后面就要有多少个 section（每个 section 后可以有1-2页正文）
 - 有数字对比时优先用 data 或 table 布局
 - 对比分析用 twocol
 - 流程/演进用 timeline
@@ -427,6 +492,12 @@ POINTS:
           slide.subtitle = this._extract(page, /SUBTITLE:\s*(.+)/) || ''
           slide.author = this._extract(page, /AUTHOR:\s*(.+)/) || ''
           slide.content = this._renderCover(slide)
+          break
+
+        case 'toc':
+          slide.items = this._extractAll(page, /ITEM:\s*(.+)/g)
+          slide.keyPoints = slide.items
+          slide.content = this._renderToc(slide)
           break
 
         case 'section':
@@ -528,6 +599,26 @@ POINTS:
     return `<div class="ppt-closing">
       <h1>感谢观看</h1>
       ${meta.length ? `<div class="ppt-closing-meta">${meta.join(' &nbsp;|&nbsp; ')}</div>` : ''}
+    </div>`
+  }
+
+  _renderToc(s) {
+    const items = (s.items || []).map((item, i) => {
+      const m = item.match(/^(\d+)[.\s、]+(.+)/)
+      if (m) {
+        return `<div class="ppt-toc-item">
+          <span class="ppt-toc-num">${m[1]}</span>
+          <span class="ppt-toc-title">${m[2]}</span>
+        </div>`
+      }
+      return `<div class="ppt-toc-item">
+        <span class="ppt-toc-num">${String(i + 1).padStart(2, '0')}</span>
+        <span class="ppt-toc-title">${item}</span>
+      </div>`
+    }).join('')
+    return `<div class="ppt-toc">
+      <h2 class="ppt-toc-heading">目录</h2>
+      <div class="ppt-toc-list">${items}</div>
     </div>`
   }
 

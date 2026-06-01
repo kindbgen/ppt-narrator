@@ -20,12 +20,12 @@
         </div>
         <div class="flex items-center gap-4">
           <span class="text-xs" :class="saveStatus.class">{{ saveStatus.text }}</span>
-          <span v-if="store.generatingNarrations" class="text-xs text-blue-500">
+          <span v-if="store.generatingNarrations && store.generatingProjectId === store.currentProjectId" class="text-xs text-blue-500">
             {{ store.narrationProgress?.phase === 'ppt'
               ? '🤖 AI 正在分析内容生成 PPT 页面...'
               : `🤖 正在生成旁白 ${store.narrationProgress?.current || 0}/${store.narrationProgress?.total || 0}...` }}
           </span>
-          <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors" :disabled="store.generatingNarrations">开始演示</button>
+          <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors" :disabled="store.generatingNarrations && store.generatingProjectId === store.currentProjectId">开始演示</button>
           <div class="relative">
             <button @click="showExport = !showExport" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">导出 ▼</button>
             <div v-if="showExport" class="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 w-44">
@@ -63,6 +63,7 @@
           <div class="px-4 py-3 flex items-center justify-between">
             <span class="text-xs font-medium text-gray-400 uppercase">页面 ({{ store.totalPages }})</span>
           </div>
+          <div class="px-4 pb-2 text-[11px]" :class="(store.generatingNarrations && store.generatingProjectId === store.currentProjectId) ? 'text-amber-500' : 'text-gray-300'">{{ (store.generatingNarrations && store.generatingProjectId === store.currentProjectId) ? '⏳ 正在生成PPT和旁白中...' : '💡 拖拽页面可调整排序' }}</div>
           <div class="px-2 space-y-0.5">
             <div
               v-for="(slide, index) in store.slides"
@@ -82,7 +83,7 @@
               </div>
               <button
                 @click.stop="deleteSlide(index)"
-                :disabled="store.slides.length <= 1 || slide.layout === 'cover' || slide.layout === 'closing'"
+                :disabled="store.slides.length <= 1 || slide.layout === 'cover' || slide.layout === 'closing' || slide.layout === 'toc'"
                 class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all shrink-0 text-xs disabled:hidden"
               >✕</button>
             </div>
@@ -165,6 +166,7 @@ import { usePPTStore } from '../stores/ppt'
 import { updateProjectMeta, updateProjectSlides, createProject, getProject } from '../services/storage'
 import { AIService } from '../services/ai-provider'
 import AppShell from '../components/layout/AppShell.vue'
+import { resumeGeneration } from '../services/generation'
 
 const router = useRouter()
 const store = usePPTStore()
@@ -190,7 +192,7 @@ const currentSlide = computed(() => {
 // ---- Editable content ----
 const editableContent = ref('')
 const originalContent = ref('')
-const editMode = ref('html')
+const editMode = ref('visual')
 const previewFull = ref(false)
 let contentSaveTimer = null
 const isContentModified = computed(() => editableContent.value !== originalContent.value)
@@ -240,6 +242,9 @@ const startTime = ref(store.startTime)
 const saveStatus = reactive({ text: '', class: 'text-gray-400' })
 let saveTimer = null
 let saving = false
+
+// Keep title in sync when generation updates store.projectTitle
+watch(() => store.projectTitle, (val) => { if (val) projectTitle.value = val })
 
 function onTitleEdit() { store.projectTitle = projectTitle.value; autoSave() }
 
@@ -390,6 +395,12 @@ function exportPPT(format) {
   .ppt-callout{max-width:600px;margin:0 auto;text-align:left}
   .ppt-callout blockquote{margin:0 0 16px 0;padding:28px 32px;background:rgba(255,255,255,.08);border-left:5px solid rgba(255,255,255,.3);border-radius:0 10px 10px 0;font-size:22px;font-style:italic;line-height:1.5;position:relative}
   .ppt-callout blockquote::before{content:'"';position:absolute;top:-10px;left:12px;font-size:50px;opacity:.15;line-height:1}
+  .ppt-toc{max-width:650px;margin:0 auto;text-align:left;padding:40px 20px}
+  .ppt-toc-heading{font-size:32px;font-weight:700;margin-bottom:32px;text-align:center;color:${titleColor}}
+  .ppt-toc-list{display:flex;flex-direction:column;gap:10px}
+  .ppt-toc-item{display:flex;align-items:center;gap:16px;padding:14px 20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px}
+  .ppt-toc-num{font-size:18px;font-weight:700;opacity:.5;min-width:28px}
+  .ppt-toc-title{font-size:18px;font-weight:500;flex:1}
   .ppt-closing{text-align:center;padding:80px 20px}
   .ppt-closing h1{font-size:48px;font-weight:300;letter-spacing:8px;margin-bottom:40px;color:${titleColor}}
   .ppt-closing-meta{display:flex;justify-content:center;gap:32px;font-size:17px;opacity:.6;border-top:1px solid rgba(255,255,255,.12);padding-top:28px;flex-wrap:wrap}
@@ -476,7 +487,7 @@ async function restoreFromDB() {
   } catch (e) { console.warn('Restore failed:', e); if (!store.slides.length) router.replace('/') }
 }
 
-onMounted(() => { syncContent(); if (!store.slides.length) restoreFromDB() })
+onMounted(() => { syncContent(); if (!store.slides.length) restoreFromDB().then(() => resumeGeneration(store)) })
 watch(() => store.currentProjectId, (n, o) => { if (n && n !== o) restoreFromDB() })
 </script>
 

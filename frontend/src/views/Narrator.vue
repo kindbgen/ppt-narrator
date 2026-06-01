@@ -25,8 +25,8 @@
       <!-- Page List + Narration -->
       <div class="flex-1 overflow-y-auto">
         <div class="px-3 py-2 border-b border-gray-800/20">
-          <div class="flex gap-1 overflow-x-auto scrollbar-none">
-            <button v-for="(s, i) in slides" :key="i" @click="goToPage(i)"
+          <div ref="pageListRef" class="flex gap-1 overflow-x-auto scrollbar-none">
+            <button v-for="(s, i) in slides" :key="i" @click="goToPage(i)" :data-page="i"
               :class="currentPage === i ? 'bg-white/15 text-white ring-1 ring-white/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'"
               class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all" :title="s.title">
               {{ i + 1 }}. {{ s.title?.slice(0, 8) }}{{ s.title?.length > 8 ? '…' : '' }}
@@ -66,7 +66,7 @@
     <div class="flex-1 flex flex-col">
       <div :class="themeClasses.bg" class="flex-1 flex items-center justify-center p-8 transition-colors duration-500">
         <div class="w-full max-w-4xl text-center">
-          <h2 v-if="currentSlide.layout !== 'cover' && currentSlide.layout !== 'section' && currentSlide.layout !== 'closing'" :class="themeClasses.title" class="text-4xl font-bold mb-6">{{ currentSlide.title }}</h2>
+          <h2 v-if="currentSlide.layout !== 'cover' && currentSlide.layout !== 'section' && currentSlide.layout !== 'closing' && currentSlide.layout !== 'toc'" :class="themeClasses.title" class="text-4xl font-bold mb-6">{{ currentSlide.title }}</h2>
           <div :class="themeClasses.body" class="text-xl leading-relaxed slide-body" v-html="currentSlide.content"></div>
         </div>
       </div>
@@ -78,11 +78,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useSync } from '../utils/sync'
 
 const sync = useSync()
 const mainEl = ref(null)
+const pageListRef = ref(null)
 
 const slides = ref([])
 const currentPage = ref(0)
@@ -105,6 +106,14 @@ const timerBarColor = computed(() => remaining.value > 30 ? 'bg-green-500' : rem
 const timerPercent = computed(() => Math.round(remaining.value / (currentSlide.value.duration || 120) * 100))
 
 function formatTime(s) { const m = Math.floor(Math.max(0, s) / 60); return `${m}:${String(Math.max(0, s) % 60).padStart(2, '0')}` }
+
+watch(currentPage, async () => {
+  await nextTick()
+  const container = pageListRef.value
+  if (!container) return
+  const btn = container.querySelector(`[data-page="${currentPage.value}"]`)
+  if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+})
 
 function startTimer() { stopTimer(); timerInterval = setInterval(() => { if (!isPaused.value && remaining.value > 0) { remaining.value--; sync.broadcastTimerUpdate(0, remaining.value) } }, 1000) }
 function stopTimer() { clearInterval(timerInterval); timerInterval = null }
