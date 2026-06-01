@@ -40,7 +40,11 @@ export class DocmostClient {
 
     console.log(`[MCP] Calling ${toolName}`, JSON.stringify(args).slice(0, 200))
 
-    const res = await fetch(this.mcpUrl, {
+    // On localhost, route through Vite dev proxy to avoid CORS
+    const isLocal = window.location.hostname === 'localhost'
+    const url = isLocal ? '/api/mcp-proxy' : this.mcpUrl
+
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
