@@ -1,26 +1,61 @@
 <template>
-  <div class="flex h-screen bg-white text-gray-900">
-    <aside v-if="collapsed" class="w-14 flex flex-col items-center border-r border-gray-100 bg-gray-50/50 shrink-0 py-4 gap-4">
-      <button @click="collapsed = false" class="text-gray-400 hover:text-gray-600 text-lg transition-colors" title="展开侧边栏">▶</button>
-      <button @click="goHome" class="text-gray-400 hover:text-gray-600 text-xl transition-colors" title="新建项目">+</button>
+  <div class="flex h-screen bg-white text-gray-900 overflow-x-hidden">
+    <!-- Collapsed Sidebar -->
+    <aside v-if="collapsed" class="w-16 flex flex-col items-center border-r border-gray-100 bg-gray-50/50 shrink-0 py-4 gap-1">
+      <button
+        @click="collapsed = false"
+        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+        <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">展开侧边栏</span>
+      </button>
+
+      <button
+        @click="goHome"
+        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+        <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">新建项目</span>
+      </button>
+
       <div class="flex-1" />
-      <button @click="showSettings = true" class="text-gray-400 hover:text-gray-600 text-xl transition-colors" title="设置">⚙️</button>
+
+      <button
+        @click="showSettings = true"
+        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+        <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">设置</span>
+      </button>
     </aside>
 
+    <!-- Expanded Sidebar -->
     <aside v-else class="w-60 flex flex-col border-r border-gray-100 bg-gray-50/50 shrink-0 transition-all duration-200">
       <div class="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between">
         <router-link to="/" class="flex items-center gap-2">
           <span class="text-lg">📽️</span>
           <h1 class="text-sm font-bold tracking-tight">PPT 演讲助手</h1>
         </router-link>
-        <button @click="collapsed = true" class="text-gray-300 hover:text-gray-500 text-xs transition-colors" title="收起侧边栏">◀</button>
+        <button
+          @click="collapsed = true"
+          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7M19 19l-7-7 7-7" /></svg>
+          <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">收起侧边栏</span>
+        </button>
       </div>
 
+      <div class="flex items-center justify-between px-4 py-2.5 shrink-0">
+        <span class="text-xs font-medium text-gray-400">历史项目</span>
+        <button
+          @click="goHome"
+          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+          <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">新建项目</span>
+        </button>
+      </div>
       <div class="flex-1 overflow-y-auto">
-        <div class="flex items-center justify-between px-4 py-2.5">
-          <span class="text-xs font-medium text-gray-400">历史项目</span>
-          <button @click="goHome" class="text-gray-300 hover:text-gray-600 text-base leading-none transition-colors" title="新建项目">+</button>
-        </div>
         <p v-if="!projects.length" class="text-xs text-gray-300 text-center py-10 px-4">暂无项目，点击 + 新建</p>
         <div class="px-2">
           <div v-for="p in sortedProjects" :key="p.id" class="relative group">
@@ -46,11 +81,16 @@
         </div>
       </div>
 
-      <div class="border-t border-gray-100 px-4 py-2.5 flex items-center">
-        <button @click="showSettings = true" class="flex items-center gap-2 w-full text-xs text-gray-400 hover:text-gray-600 transition-colors py-1" title="设置">
-          <span>⚙️</span><span>设置</span>
-          <span v-if="!hasAI" class="w-1.5 h-1.5 rounded-full bg-orange-400 ml-auto" title="AI 未配置"></span>
+      <div class="border-t border-gray-100 px-4 py-2.5 flex items-center gap-2">
+        <button
+          @click="showSettings = true"
+          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200 shrink-0"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+          <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">设置</span>
         </button>
+        <span class="text-xs text-gray-400">设置</span>
+        <span v-if="!hasAI" class="w-1.5 h-1.5 rounded-full bg-orange-400 ml-auto" title="AI 未配置"></span>
       </div>
     </aside>
 
