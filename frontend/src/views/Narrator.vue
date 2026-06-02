@@ -215,13 +215,17 @@ onMounted(() => {
     localStorage.setItem('ppt-presentation-start', Date.now())
     resetTimer()
   })
+  sync.on('PAGE_CHANGE', (data) => {
+    currentPage.value = data.pageIndex
+    resetTimer()
+  })
   if (slides.value.length > 0) {
     if (!startTs) localStorage.setItem('ppt-presentation-start', Date.now())
     sync.broadcastPresentationStart(slides.value); sync.broadcastPageChange(0, slides.value[0]?.narration); resetTimer()
   }
   mainEl.value?.focus()
 })
-onUnmounted(() => { stopTimer(); sync.off('PRESENTATION_START'); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd() })
+onUnmounted(() => { stopTimer(); sync.off('PRESENTATION_START'); sync.off('PAGE_CHANGE'); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd() })
 </script>
 
 <style>

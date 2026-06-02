@@ -1,5 +1,7 @@
 <template>
-  <div :class="themeClasses.bg" class="fixed inset-0 flex items-center justify-center p-12 transition-colors duration-500">
+  <div :class="themeClasses.bg" class="fixed inset-0 flex items-center justify-center p-12 transition-colors duration-500"
+    @keydown.left.prevent="prevSlide" @keydown.right.prevent="nextSlide"
+    tabindex="0" ref="mainEl">
     <div class="w-full max-w-5xl text-center">
       <h2 v-if="currentSlide.layout !== 'cover' && currentSlide.layout !== 'section' && currentSlide.layout !== 'closing' && currentSlide.layout !== 'toc'" :class="themeClasses.title" class="text-5xl font-bold mb-8">{{ currentSlide.title }}</h2>
       <div :class="themeClasses.body" class="text-2xl leading-relaxed slide-body" v-html="currentSlide.content"></div>
@@ -12,12 +14,23 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useSync } from '../utils/sync'
 
 const sync = useSync()
+const mainEl = ref(null)
 
 // --- State ---
 const slides = ref([])
 const currentPage = ref(0)
 
 const currentSlide = computed(() => slides.value[currentPage.value] || {})
+
+// --- Navigation ---
+function goToSlide(index) {
+  if (index < 0 || index >= slides.value.length) return
+  currentPage.value = index
+  sync.broadcastPageChange(index, slides.value[index]?.narration)
+}
+
+function prevSlide() { if (currentPage.value > 0) goToSlide(currentPage.value - 1) }
+function nextSlide() { if (currentPage.value < slides.value.length - 1) goToSlide(currentPage.value + 1) }
 
 // --- Theme Config ---
 const themeConfig = {
@@ -50,6 +63,8 @@ onMounted(() => {
     currentPage.value = 0
     document.title = data.slides[0]?.title || 'PPT 演讲助手'
   })
+
+  mainEl.value?.focus()
 })
 
 onUnmounted(() => {
