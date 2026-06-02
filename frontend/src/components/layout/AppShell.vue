@@ -66,7 +66,10 @@
               <div class="flex-1 min-w-0">
                 <input v-if="renaming === p.id" v-model="renameText" ref="renameInput" @blur="doRename(p)" @keydown.enter="doRename(p)" @keydown.escape="renaming = null" @click.stop class="w-full text-sm bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:ring-2 focus:ring-gray-300 focus:outline-none" />
                 <template v-else>
-                  <div class="text-sm truncate">{{ p.title }}</div>
+                  <div class="text-sm truncate flex items-center gap-1.5">
+                    {{ p.title }}
+                    <span v-if="!!store.activeGenerations[p.id]" class="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" title="生成中"></span>
+                  </div>
                   <div class="text-xs text-gray-400 mt-0.5">{{ fmtDate(p.updated_at) }}</div>
                 </template>
               </div>
@@ -145,6 +148,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getProjectList, updateProjectMeta, deleteProject, getProject } from '../../services/storage'
+import { clearGenerationState } from '../../services/generation'
 import { usePPTStore } from '../../stores/ppt'
 
 const props = defineProps({ activeId: { type: Number, default: null } })
@@ -187,7 +191,7 @@ function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso); return `${
 function togglePin(p) { updateProjectMeta(p.id, { pinned: p.pinned ? 0 : 1 }).then(load) }
 async function rename(p) { menuId.value = null; renaming.value = p.id; renameText.value = p.title; await nextTick(); const el = Array.isArray(renameInput.value) ? renameInput.value[renameInput.value.length-1] : renameInput.value; if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) } }
 async function doRename(p) { if (renameText.value && renameText.value !== p.title) { await updateProjectMeta(p.id, { title: renameText.value }); await load() } renaming.value = null }
-async function del(id) { if (!confirm('确定删除？')) return; await deleteProject(id); await load(); emit('projectDeleted', id); menuId.value = null }
+async function del(id) { if (!confirm('确定删除？')) return; await deleteProject(id); clearGenerationState(id); await load(); emit('projectDeleted', id); menuId.value = null }
 async function load() { try { projects.value = await getProjectList() } catch {} }
 
 async function saveSettings() {

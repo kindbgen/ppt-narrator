@@ -116,7 +116,7 @@ import { useRouter } from 'vue-router'
 import { usePPTStore } from '../stores/ppt'
 import { DocmostClient } from '../services/docmost'
 import { createProject } from '../services/storage'
-import { generatePPTAndNarrations } from '../services/generation'
+import { startGeneration } from '../services/generation'
 import AppShell from '../components/layout/AppShell.vue'
 
 const router = useRouter()
@@ -197,8 +197,8 @@ async function doGenerate(provider, settings) {
   // Navigate to editor immediately
   router.push('/editor')
 
-  // Delegate to shared generation service (supports resume after refresh)
-  generatePPTAndNarrations({
+  // Delegate to shared generation service (supports concurrent independent sessions)
+  startGeneration({
     projectId: tempId,
     rawContent: rawContent.value,
     style: selStyle.value,
@@ -207,9 +207,7 @@ async function doGenerate(provider, settings) {
     pageMode: pageMode.value,
     pageMin: pageMin.value,
     pageMax: pageMax.value,
-    store,
-    onProgress: () => {},
-    onComplete: () => {}
+    store
   })
 }
 

@@ -18,10 +18,9 @@ export const usePPTStore = defineStore('ppt', {
     isPresenting: false,
     elapsedTime: 0,
 
-    // AI 生成状态
-    generatingNarrations: false,
-    narrationProgress: null,
-    generatingProjectId: null,
+    // AI 生成状态 — per-project tracking for concurrent independent generations
+    // { [projectId]: { phase: 'ppt'|'narration', current: number, total: number } }
+    activeGenerations: {},
 
     // 配置
     config: {
@@ -110,6 +109,33 @@ export const usePPTStore = defineStore('ppt', {
     // 设置模板风格
     setTemplateStyle(style) {
       this.config.templateStyle = style
+    },
+
+    // 设置某个项目的生成进度
+    setGenerationProgress(projectId, progress) {
+      this.activeGenerations = { ...this.activeGenerations, [projectId]: progress }
+    },
+
+    // 清除某个项目的生成进度
+    clearGenerationProgress(projectId) {
+      if (!this.activeGenerations[projectId]) return
+      const next = { ...this.activeGenerations }
+      delete next[projectId]
+      this.activeGenerations = next
+    },
+
+    // 只在当前项目匹配时更新 slide 数据（避免干扰其他项目的视图）
+    updateSlideIfCurrent(projectId, slideIndex, data) {
+      if (this.currentProjectId === projectId && this.slides[slideIndex]) {
+        this.slides[slideIndex] = { ...this.slides[slideIndex], ...data }
+      }
+    },
+
+    // 只在当前项目匹配时设置整个 slides 数组
+    setSlidesIfCurrent(projectId, slides) {
+      if (this.currentProjectId === projectId) {
+        this.setSlides(slides)
+      }
     }
   }
 })

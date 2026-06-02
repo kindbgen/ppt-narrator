@@ -20,12 +20,12 @@
         </div>
         <div class="flex items-center gap-4">
           <span class="text-xs" :class="saveStatus.class">{{ saveStatus.text }}</span>
-          <span v-if="store.generatingNarrations && store.generatingProjectId === store.currentProjectId" class="text-xs text-blue-500">
-            {{ store.narrationProgress?.phase === 'ppt'
+          <span v-if="!!store.activeGenerations[store.currentProjectId]" class="text-xs text-blue-500">
+            {{ store.activeGenerations[store.currentProjectId]?.phase === 'ppt'
               ? '🤖 AI 正在分析内容生成 PPT 页面...'
-              : `🤖 正在生成旁白 ${store.narrationProgress?.current || 0}/${store.narrationProgress?.total || 0}...` }}
+              : `🤖 正在生成旁白 ${store.activeGenerations[store.currentProjectId]?.current || 0}/${store.activeGenerations[store.currentProjectId]?.total || 0}...` }}
           </span>
-          <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors" :disabled="store.generatingNarrations && store.generatingProjectId === store.currentProjectId">开始演示</button>
+          <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors" :disabled="!!store.activeGenerations[store.currentProjectId]">开始演示</button>
           <div class="relative">
             <button @click="showExport = !showExport" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">导出 ▼</button>
             <div v-if="showExport" class="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 w-44">
@@ -63,7 +63,7 @@
           <div class="px-4 py-3 flex items-center justify-between">
             <span class="text-xs font-medium text-gray-400 uppercase">页面 ({{ store.totalPages }})</span>
           </div>
-          <div class="px-4 pb-2 text-[11px]" :class="(store.generatingNarrations && store.generatingProjectId === store.currentProjectId) ? 'text-amber-500' : 'text-gray-300'">{{ (store.generatingNarrations && store.generatingProjectId === store.currentProjectId) ? '⏳ 正在生成PPT和旁白中...' : '💡 拖拽页面可调整排序' }}</div>
+          <div class="px-4 pb-2 text-[11px]" :class="!!store.activeGenerations[store.currentProjectId] ? 'text-amber-500' : 'text-gray-300'">{{ !!store.activeGenerations[store.currentProjectId] ? '⏳ 正在生成PPT和旁白中...' : '💡 拖拽页面可调整排序' }}</div>
           <div class="px-2 space-y-0.5">
             <div
               v-for="(slide, index) in store.slides"
