@@ -1,10 +1,10 @@
 <template>
   <div class="flex h-screen bg-white text-gray-900 overflow-x-hidden">
     <!-- Collapsed Sidebar -->
-    <aside v-if="collapsed" class="w-16 flex flex-col items-center border-r border-gray-100 bg-gray-50/50 shrink-0 py-4 gap-1">
+    <aside v-if="collapsed" class="w-16 flex flex-col items-center bg-gray-50 shrink-0 py-4 gap-1 relative z-10 shadow-[1px_0_4px_rgba(0,0,0,0.04)]">
       <button
         @click="collapsed = false"
-        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-all duration-200"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
         <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">展开侧边栏</span>
@@ -12,7 +12,7 @@
 
       <button
         @click="goHome"
-        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-all duration-200"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>
         <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">新建项目</span>
@@ -22,7 +22,7 @@
 
       <button
         @click="showSettings = true"
-        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+        class="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-all duration-200"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
         <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">设置</span>
@@ -30,7 +30,7 @@
     </aside>
 
     <!-- Expanded Sidebar -->
-    <aside v-else class="w-60 flex flex-col border-r border-gray-100 bg-gray-50/50 shrink-0 transition-all duration-200">
+    <aside v-else class="w-60 flex flex-col bg-gray-50 shrink-0 transition-all duration-200 relative z-10 shadow-[1px_0_4px_rgba(0,0,0,0.04)]">
       <div class="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between">
         <router-link to="/" class="flex items-center gap-2">
           <span class="text-lg">📽️</span>
@@ -38,7 +38,7 @@
         </router-link>
         <button
           @click="collapsed = true"
-          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-200/60 transition-all duration-200"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7M19 19l-7-7 7-7" /></svg>
           <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">收起侧边栏</span>
@@ -49,18 +49,18 @@
         <span class="text-xs font-medium text-gray-400">历史项目</span>
         <button
           @click="goHome"
-          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-200/60 transition-all duration-200"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>
           <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">新建项目</span>
         </button>
       </div>
       <div class="flex-1 overflow-y-auto">
-        <p v-if="!projects.length" class="text-xs text-gray-300 text-center py-10 px-4">暂无项目，点击 + 新建</p>
+        <p v-if="!projects.length" class="text-xs text-gray-400 text-center py-10 px-4">暂无项目，点击 + 新建</p>
         <div class="px-2">
           <div v-for="p in sortedProjects" :key="p.id" class="relative group">
             <div
-              :class="['flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all mb-0.5', activeId === p.id ? 'bg-gray-100 text-gray-900' : 'hover:bg-gray-50 text-gray-600']"
+              :class="['flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all mb-0.5', activeId === p.id ? 'bg-white shadow-sm ring-1 ring-gray-200/60 text-gray-900' : 'hover:bg-gray-200/50 text-gray-600']"
               @click="openProject(p.id)"
             >
               <div class="flex-1 min-w-0">
@@ -75,7 +75,7 @@
               </div>
               <button @click.stop="menuId = menuId === p.id ? null : p.id" class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 transition-all text-sm">⋯</button>
             </div>
-            <div v-if="menuId === p.id" class="absolute left-2 right-2 top-full mt-0.5 bg-white border border-gray-100 rounded-lg shadow-md py-1 z-50">
+            <div v-if="menuId === p.id" class="absolute left-2 right-2 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-md py-1 z-50">
               <button @click="rename(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">✏️ 重命名</button>
               <button @click="togglePin(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">{{ p.pinned ? '📌 取消置顶' : '📌 置顶' }}</button>
               <button @click="del(p.id)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-red-500 transition-colors">🗑️ 删除</button>
@@ -87,7 +87,7 @@
       <div class="border-t border-gray-100 px-4 py-2.5 flex items-center gap-2">
         <button
           @click="showSettings = true"
-          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200 shrink-0"
+          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-all duration-200 shrink-0"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
           <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">设置</span>
