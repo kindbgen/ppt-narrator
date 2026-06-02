@@ -1,6 +1,51 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
+import fs from 'node:fs'
+import path from 'node:path'
+
+function saveEnvPlugin() {
+  return {
+    name: 'save-env',
+    configureServer(server) {
+      server.middlewares.use('/api/save-env', (req, res) => {
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(); return }
+        let body = ''
+        req.on('data', c => body += c)
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body)
+            const envPath = path.resolve(process.cwd(), '.env.local')
+            let content = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : ''
+
+            const map = {
+              aiProvider: 'VITE_AI_PROVIDER',
+              baseUrl: 'VITE_AI_GATEWAY_BASE_URL',
+              apiKey: 'VITE_AI_GATEWAY_API_KEY',
+              model: 'VITE_AI_GATEWAY_MODEL',
+              ollamaEndpoint: 'VITE_OLLAMA_ENDPOINT',
+              ollamaModel: 'VITE_OLLAMA_MODEL',
+              mcpUrl: 'VITE_DOCMOST_MCP_URL',
+              mcpToken: 'VITE_DOCMOST_TOKEN'
+            }
+
+            for (const [k, vk] of Object.entries(map)) {
+              if (data[k] === undefined) continue
+              const val = String(data[k])
+              const re = new RegExp(`^${vk}=.*`, 'm')
+              content = re.test(content) ? content.replace(re, `${vk}=${val}`) : content.trimEnd() + `\n${vk}=${val}\n`
+            }
+
+            fs.writeFileSync(envPath, content)
+            res.statusCode = 200; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ok: true }))
+          } catch (e) {
+            res.statusCode = 500; res.end(JSON.stringify({ error: e.message }))
+          }
+        })
+      })
+    }
+  }
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -9,15 +54,10 @@ export default defineConfig(({ mode }) => {
   const pathname = mcpUrl ? new URL(mcpUrl).pathname : '/'
 
   return {
-    plugins: [vue(), tailwindcss()],
+    plugins: [vue(), tailwindcss(), saveEnvPlugin()],
     server: {
       proxy: {
-        '/api/mcp-proxy': {
-          target: origin,
-          changeOrigin: true,
-          secure: false,
-          rewrite: () => pathname
-        }
+        '/api/mcp-proxy': { target: origin, changeOrigin: true, secure: false, rewrite: () => pathname }
       }
     }
   }

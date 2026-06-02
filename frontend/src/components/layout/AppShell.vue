@@ -126,9 +126,7 @@
 
           <div class="flex gap-3">
             <button @click="saveSettings" class="flex-1 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800">保存设置</button>
-            <button @click="exportEnv" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">导出 .env</button>
           </div>
-          <p class="text-xs text-gray-400 mt-3">设置保存在浏览器本地存储，不会提交到 Git。</p>
         </div>
       </div>
     </Teleport>
@@ -150,14 +148,14 @@ const projects = ref([]); const menuId = ref(null); const renaming = ref(null); 
 const showSettings = ref(false); const collapsed = ref(false)
 
 const cfg = ref({
-  aiProvider: localStorage.getItem('ppt-ai-provider') || 'gateway',
-  baseUrl: localStorage.getItem('ppt-ai-base-url') || import.meta.env.VITE_AI_GATEWAY_BASE_URL || '',
-  apiKey: localStorage.getItem('ppt-ai-api-key') || import.meta.env.VITE_AI_GATEWAY_API_KEY || '',
-  model: localStorage.getItem('ppt-ai-model') || import.meta.env.VITE_AI_GATEWAY_MODEL || '',
-  ollamaEndpoint: localStorage.getItem('ppt-ollama-endpoint') || 'http://localhost:11434',
-  ollamaModel: localStorage.getItem('ppt-ollama-model') || 'llama2',
-  mcpUrl: localStorage.getItem('ppt-mcp-url') || import.meta.env.VITE_DOCMOST_MCP_URL || '',
-  mcpToken: localStorage.getItem('ppt-mcp-token') || import.meta.env.VITE_DOCMOST_TOKEN || ''
+  aiProvider: import.meta.env.VITE_AI_PROVIDER || 'gateway',
+  baseUrl: import.meta.env.VITE_AI_GATEWAY_BASE_URL || '',
+  apiKey: import.meta.env.VITE_AI_GATEWAY_API_KEY || '',
+  model: import.meta.env.VITE_AI_GATEWAY_MODEL || '',
+  ollamaEndpoint: import.meta.env.VITE_OLLAMA_ENDPOINT || 'http://localhost:11434',
+  ollamaModel: import.meta.env.VITE_OLLAMA_MODEL || 'llama2',
+  mcpUrl: import.meta.env.VITE_DOCMOST_MCP_URL || '',
+  mcpToken: import.meta.env.VITE_DOCMOST_TOKEN || ''
 })
 
 const hasAI = computed(() => cfg.value.aiProvider === 'ollama' || !!(cfg.value.baseUrl || cfg.value.apiKey))
@@ -174,17 +172,16 @@ async function doRename(p) { if (renameText.value && renameText.value !== p.titl
 async function del(id) { if (!confirm('确定删除？')) return; await deleteProject(id); await load(); emit('projectDeleted', id); menuId.value = null }
 async function load() { try { projects.value = await getProjectList() } catch {} }
 
-function saveSettings() {
-  localStorage.setItem('ppt-ai-provider', cfg.value.aiProvider); localStorage.setItem('ppt-ai-base-url', cfg.value.baseUrl)
-  localStorage.setItem('ppt-ai-api-key', cfg.value.apiKey); localStorage.setItem('ppt-ai-model', cfg.value.model)
-  localStorage.setItem('ppt-ollama-endpoint', cfg.value.ollamaEndpoint); localStorage.setItem('ppt-ollama-model', cfg.value.ollamaModel)
-  localStorage.setItem('ppt-mcp-url', cfg.value.mcpUrl); localStorage.setItem('ppt-mcp-token', cfg.value.mcpToken)
+async function saveSettings() {
+  try {
+    // Save to .env.local via API
+    await fetch('/api/save-env', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg.value)
+    })
+  } catch (e) { /* ignore */ }
   showSettings.value = false
-}
-
-function exportEnv() {
-  const lines = ['# PPT 演讲助手 环境变量', cfg.value.baseUrl ? `VITE_AI_GATEWAY_BASE_URL=${cfg.value.baseUrl}` : '', cfg.value.apiKey ? `VITE_AI_GATEWAY_API_KEY=${cfg.value.apiKey}` : '', cfg.value.model ? `VITE_AI_GATEWAY_MODEL=${cfg.value.model}` : '', cfg.value.mcpUrl ? `VITE_DOCMOST_MCP_URL=${cfg.value.mcpUrl}` : '', cfg.value.mcpToken ? `VITE_DOCMOST_TOKEN=${cfg.value.mcpToken}` : ''].filter(Boolean).join('\n')
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines+'\n'], { type: 'text/plain' })); a.download = '.env.local'; a.click()
 }
 
 async function openProject(id) {
