@@ -400,6 +400,7 @@ function exportPPT(format) {
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
+  html{print-color-adjust:exact;-webkit-print-color-adjust:exact}
   body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;${bg}color:${textColor}}
   .slide{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;${format==='pdf'?'page-break-after:always;':'margin-bottom:40px;padding-bottom:80px;border-bottom:2px dashed rgba(128,128,128,0.2)'}}
   .slide:last-child{page-break-after:auto;border-bottom:none;margin-bottom:0;padding-bottom:60px}
@@ -484,20 +485,40 @@ function exportNarration(format) {
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',system-ui,sans-serif;${bg}color:${textColor};min-height:100vh}
-  .wrap{max-width:800px;margin:0 auto;padding:60px 40px}
-  h1{font-size:32px;font-weight:700;color:${titleColor};margin-bottom:8px}
-  .meta{font-size:15px;opacity:.6;margin-bottom:40px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.15)}
-  .page{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,.1);${format==='pdf'?'page-break-after:always;':''}}
+  html{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;${bg}color:${textColor};line-height:1.6}
+  .wrap{max-width:${format==='pdf'?'100%':'720px'};margin:0 auto;padding:${format==='pdf'?'0':'40px 24px'}}
+  .cover{display:flex;flex-direction:column;align-items:center;justify-content:center;${format==='pdf'?'min-height:100vh;':''}text-align:center;padding:${format==='pdf'?'60px 40px':'80px 0 48px'};${format==='pdf'?'page-break-after:always;':''}}
+  .cover-icon{font-size:${format==='pdf'?'64px':'48px'};margin-bottom:24px}
+  .cover h1{font-size:${format==='pdf'?'42px':'32px'};font-weight:800;color:${titleColor};margin-bottom:8px}
+  .cover-sub{font-size:${format==='pdf'?'18px':'15px'};opacity:.55;margin-bottom:40px}
+  .cover-meta{display:flex;gap:32px;font-size:14px;opacity:.5;padding-top:32px;border-top:1px solid rgba(255,255,255,.12)}
+  .cover-meta-item{display:flex;flex-direction:column;gap:2px}
+  .cover-meta-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:.5}
+  .page{margin-bottom:${format==='pdf'?'0':'40px'};padding-bottom:${format==='pdf'?'0':'32px'};border-bottom:1px solid rgba(255,255,255,${format==='pdf'?'0':'.08'});${format==='pdf'?'min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 50px;page-break-after:always;':''}}
   .page:last-child{border-bottom:none;page-break-after:auto}
-  .page h3{font-size:18px;font-weight:600;color:${titleColor};margin-bottom:8px}
-  .page p{font-size:16px;line-height:1.8;opacity:.85;white-space:pre-wrap}
-  @page{margin:0}@media print{body{margin:0}.wrap{padding:30px}}
-</style></head><body><div class="wrap">
-<h1>${fileName}</h1>
-${meta.length ? `<div class="meta">${meta.join(' &nbsp;|&nbsp; ')}</div>` : ''}
-${store.slides.map((s, i) => `<div class="page"><h3>${i + 1}. ${s.title}</h3><p>${s.narration || '无旁白内容'}</p></div>`).join('\n')}
-</div></body></html>`
+  .page-inner{${format==='pdf'?'max-width:700px;width:100%':''}}
+  .page-num{display:inline-block;width:${format==='pdf'?'36px':'28px'};height:${format==='pdf'?'36px':'28px'};line-height:${format==='pdf'?'36px':'28px'};text-align:center;background:rgba(255,255,255,.08);border-radius:8px;font-size:${format==='pdf'?'16px':'13px'};font-weight:700;color:${titleColor};margin-bottom:${format==='pdf'?'16px':'10px'}}
+  .page h3{font-size:${format==='pdf'?'24px':'18px'};font-weight:700;color:${titleColor};margin-bottom:${format==='pdf'?'14px':'8px'}}
+  .page p{font-size:16px;line-height:2;opacity:.85;white-space:pre-wrap}
+  @page{margin:0}@media print{body{font-size:15px}}
+</style></head><body>
+<div class="wrap">
+<div class="cover">
+  <div class="cover-icon">🎙️</div>
+  <h1>${projectTitle.value || '演讲旁白'}</h1>
+  <div class="cover-sub">演讲旁白文稿</div>
+  ${meta.length ? `<div class="cover-meta">${meta.map(m => `<div class="cover-meta-item"><span class="cover-meta-label">${speaker.value === m ? '演讲者' : department.value === m ? '部门' : eventType.value === m ? '类型' : '日期'}</span><span>${m}</span></div>`).join('')}</div>` : ''}
+</div>
+${store.slides.map((s, i) => `<div class="page">
+  <div class="page-inner">
+    <div class="page-num">${i + 1}</div>
+    <h3>${s.title}</h3>
+    <p>${s.narration || '暂无旁白内容'}</p>
+  </div>
+</div>`).join('\n')}
+</div>
+</body></html>`
 
   if (format === 'pdf') {
     const iframe = document.createElement('iframe')
