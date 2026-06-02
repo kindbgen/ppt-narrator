@@ -15,11 +15,12 @@ export function getGenerationState() {
 }
 
 function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    ...getGenerationState(),
-    ...state,
-    updatedAt: Date.now()
-  }))
+  // Strip secrets before persisting to localStorage
+  const sanitized = { ...getGenerationState(), ...state, updatedAt: Date.now() }
+  if (sanitized.settings) {
+    sanitized.settings = { baseUrl: sanitized.settings.baseUrl || '', model: sanitized.settings.model || '' }
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized))
 }
 
 export function clearGenerationState() {
@@ -114,10 +115,11 @@ export async function resumeGeneration(store) {
     : { current: 0, total: 0, phase: 'ppt' }
 
   if (state.phase === 'narration') {
+    // Read secrets from env vars (not stored in localStorage for security)
     const aiConfig = state.provider === 'gateway'
-      ? { baseUrl: state.settings?.baseUrl || '', apiKey: state.settings?.apiKey || '', model: state.settings?.model || '' }
-      : state.provider === 'claude' ? { apiKey: state.settings?.apiKey || '' }
-      : state.provider === 'openai' ? { apiKey: state.settings?.apiKey || '' }
+      ? { baseUrl: import.meta.env.VITE_AI_GATEWAY_BASE_URL || '', apiKey: import.meta.env.VITE_AI_GATEWAY_API_KEY || '', model: import.meta.env.VITE_AI_GATEWAY_MODEL || '' }
+      : state.provider === 'claude' ? { apiKey: import.meta.env.VITE_CLAUDE_API_KEY || '' }
+      : state.provider === 'openai' ? { apiKey: import.meta.env.VITE_OPENAI_API_KEY || '' }
       : {}
     const ai = new AIService(state.provider, aiConfig)
     const slides = project.slides
@@ -136,9 +138,15 @@ export async function resumeGeneration(store) {
       } catch (e) { console.warn('Resume narration failed for slide', i, e) }
     }
   } else {
+    // PPT phase — restart from scratch, read secrets from env vars
     await generatePPTAndNarrations({
       projectId: state.projectId, rawContent: state.rawContent, style: state.style,
-      provider: state.provider, settings: state.settings,
+      provider: state.provider,
+      settings: {
+        baseUrl: state.settings?.baseUrl || import.meta.env.VITE_AI_GATEWAY_BASE_URL || '',
+        apiKey: import.meta.env.VITE_AI_GATEWAY_API_KEY || import.meta.env.VITE_CLAUDE_API_KEY || import.meta.env.VITE_OPENAI_API_KEY || '',
+        model: state.settings?.model || import.meta.env.VITE_AI_GATEWAY_MODEL || ''
+      },
       pageMode: state.pageMode, pageMin: state.pageMin, pageMax: state.pageMax,
       store, onProgress: () => {}, onComplete: () => {}
     })
