@@ -67,7 +67,7 @@
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">类型</span>
-              <input v-model="eventType" @change="autoSaveAndPreview" list="event-types" class="w-28 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-300" placeholder="输入或选择" />
+              <input v-model="eventType" @change="autoSaveAndPreview" list="event-types" class="w-36 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-300" placeholder="输入或选择" />
               <datalist id="event-types">
                 <option value="内部技术讲座"/><option value="内部培训"/><option value="技术分享"/><option value="项目汇报"/>
               </datalist>
