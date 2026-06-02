@@ -1,60 +1,96 @@
 <template>
   <AppShell ref="shellRef" :activeId="store.currentProjectId">
     <div class="flex flex-col h-full">
-      <!-- ===== Minimal Header ===== -->
-      <header class="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white shrink-0">
-        <div class="flex items-center gap-4">
-          <button @click="goBack" class="text-gray-400 hover:text-gray-600 text-sm">← 返回</button>
-          <div class="flex items-center gap-3">
+      <!-- ===== Header ===== -->
+      <header class="flex items-center justify-between px-6 py-3.5 bg-white/90 backdrop-blur-sm border-b border-gray-100/80 shrink-0">
+        <div class="flex items-center gap-3">
+          <button @click="goBack" class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all" title="返回首页">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div class="flex items-center gap-2">
             <input
               v-model="projectTitle"
               @input="onTitleEdit"
               @blur="if (!projectTitle.trim()) { projectTitle = '未命名项目'; onTitleEdit() }"
-              class="text-lg font-semibold bg-transparent border-none focus:outline-none text-gray-900 w-56 placeholder-gray-300"
+              class="text-lg font-bold bg-transparent border-b-2 border-transparent hover:border-gray-200 focus:border-gray-400 focus:outline-none text-gray-900 transition-colors px-0.5 max-w-[280px] placeholder-gray-300"
               placeholder="未命名项目"
             />
-            <button @click="showMeta = !showMeta" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-              {{ showMeta ? '收起信息 ▲' : '展开信息 ▼' }}
+            <button @click="showMeta = !showMeta" class="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all" :title="showMeta ? '收起信息' : '展开信息'">
+              <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="showMeta ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
             </button>
           </div>
         </div>
-        <div class="flex items-center gap-4">
-          <span class="text-xs" :class="saveStatus.class">{{ saveStatus.text }}</span>
-          <span v-if="!!store.activeGenerations[store.currentProjectId]" class="text-xs text-blue-500">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full transition-colors duration-300" :class="saveStatus.dot"></span>
+            <span class="text-xs font-medium transition-colors duration-300" :class="saveStatus.class">{{ saveStatus.text }}</span>
+          </div>
+          <span v-if="!!store.activeGenerations[store.currentProjectId]" class="text-xs text-blue-500 bg-blue-50 px-2.5 py-1 rounded-full">
             {{ store.activeGenerations[store.currentProjectId]?.phase === 'ppt'
-              ? '🤖 AI 正在分析内容生成 PPT 页面...'
-              : `🤖 正在生成旁白 ${store.activeGenerations[store.currentProjectId]?.current || 0}/${store.activeGenerations[store.currentProjectId]?.total || 0}...` }}
+              ? '🤖 AI 正在分析内容生成 PPT...'
+              : `🤖 生成旁白 ${store.activeGenerations[store.currentProjectId]?.current || 0}/${store.activeGenerations[store.currentProjectId]?.total || 0}` }}
           </span>
-          <button @click="startPresentation" class="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors" :disabled="!!store.activeGenerations[store.currentProjectId]">开始演示</button>
+          <button @click="startPresentation" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 shadow-sm shadow-gray-900/10 transition-all active:scale-[0.98] disabled:opacity-30 disabled:pointer-events-none" :disabled="!!store.activeGenerations[store.currentProjectId]">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            开始演示
+          </button>
           <div class="relative">
-            <button @click="showExport = !showExport" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">导出 ▼</button>
-            <div v-if="showExport" class="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 w-44">
-              <div class="px-3 py-1 text-xs text-gray-400">导出 PPT</div>
-              <button @click="exportPPT('pdf')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📄 PDF</button>
-              <button @click="exportPPT('markdown')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📝 Markdown</button>
-              <button @click="exportPPT('html')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">🌐 HTML</button>
-              <div class="border-t border-gray-100 mt-1 pt-1 px-3 py-1 text-xs text-gray-400">导出旁白</div>
-              <button @click="exportNarration('pdf')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📄 PDF</button>
-              <button @click="exportNarration('md')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">📝 Markdown</button>
-              <button @click="exportNarration('html')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">🌐 HTML</button>
+            <button @click="showExport = !showExport" class="inline-flex items-center gap-1 px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
+              导出
+              <svg class="w-3 h-3 transition-transform duration-200" :class="showExport ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div v-if="showExport" class="absolute right-0 top-full mt-1.5 bg-white border border-gray-100 rounded-xl shadow-lg shadow-gray-900/5 py-1.5 z-50 w-44" @click.stop>
+              <div class="px-3 py-1 text-[10px] font-medium text-gray-400 uppercase tracking-wider">导出 PPT</div>
+              <button @click="exportPPT('pdf')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">📄 PDF</button>
+              <button @click="exportPPT('markdown')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">📝 Markdown</button>
+              <button @click="exportPPT('html')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">🌐 HTML</button>
+              <div class="border-t border-gray-100 mt-1 pt-1.5 px-3 py-1 text-[10px] font-medium text-gray-400 uppercase tracking-wider">导出旁白</div>
+              <button @click="exportNarration('pdf')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">📄 PDF</button>
+              <button @click="exportNarration('md')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">📝 Markdown</button>
+              <button @click="exportNarration('html')" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">🌐 HTML</button>
             </div>
           </div>
         </div>
       </header>
 
       <!-- ===== Metadata Panel (collapsible) ===== -->
-      <div v-if="showMeta" class="px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-4 text-sm shrink-0">
-        <input v-model="speaker" @input="autoSaveAndPreview" placeholder="演讲者姓名" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-28 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-        <input v-model="department" @input="autoSaveAndPreview" placeholder="部门/公司" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-32 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-        <select v-model="eventType" @change="autoSaveAndPreview" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
-          <option value="内部技术讲座">内部技术讲座</option><option value="内部培训">内部培训</option><option value="技术分享">技术分享</option><option value="项目汇报">项目汇报</option>
-        </select>
-        <input v-model="startTime" @input="autoSaveAndPreview" type="date" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-        <span class="text-gray-300">|</span>
-        <select v-model="currentTheme" @change="autoSave" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
-          <option v-for="t in themes" :key="t.value" :value="t">{{ t.label }}</option>
-        </select>
-      </div>
+      <Transition name="meta-slide">
+        <div v-if="showMeta" class="px-6 py-4 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80 border-b border-gray-100/80 shrink-0">
+          <div class="flex items-center gap-5 text-sm">
+            <label class="flex flex-col gap-1">
+              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">演讲者</span>
+              <input v-model="speaker" @input="autoSaveAndPreview" placeholder="姓名" class="w-24 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-300" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">部门</span>
+              <input v-model="department" @input="autoSaveAndPreview" placeholder="部门/公司" class="w-28 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-300" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">类型</span>
+              <select v-model="eventType" @change="autoSaveAndPreview" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
+                <option value="内部技术讲座">内部技术讲座</option><option value="内部培训">内部培训</option><option value="技术分享">技术分享</option><option value="项目汇报">项目汇报</option>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">日期</span>
+              <input v-model="startTime" @input="autoSaveAndPreview" type="date" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+            </label>
+            <div class="w-px h-8 bg-gray-200" />
+            <div class="flex flex-col gap-1.5">
+              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">风格</span>
+              <div class="flex gap-1.5">
+                <button
+                  v-for="t in themes" :key="t.value" @click="currentTheme = t; autoSave()"
+                  :class="currentTheme.value === t.value ? 'ring-2 ring-gray-400 ring-offset-1' : 'ring-1 ring-gray-200 hover:ring-gray-300'"
+                  class="w-7 h-5 rounded transition-all"
+                  :style="{ background: t.previewBg }"
+                  :title="t.label"
+                ></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
       <!-- ===== Main Content ===== -->
       <div class="flex flex-1 overflow-hidden">
@@ -174,10 +210,10 @@ const shellRef = ref(null)
 
 // ---- Theme ----
 const themes = [
-  { value: 'business', label: '商务', bg: 'bg-gradient-to-br from-slate-800 to-blue-950', body: 'text-blue-100' },
-  { value: 'tech', label: '科技', bg: 'bg-gradient-to-br from-gray-950 via-slate-900 to-indigo-950', body: 'text-slate-300' },
-  { value: 'minimal', label: '简约', bg: 'bg-gradient-to-br from-white to-gray-50', body: 'text-gray-600' },
-  { value: 'education', label: '教育', bg: 'bg-gradient-to-br from-emerald-50 to-white', body: 'text-gray-700' },
+  { value: 'business', label: '商务', bg: 'bg-gradient-to-br from-slate-800 to-blue-950', body: 'text-blue-100', previewBg: 'linear-gradient(135deg, #1e293b, #172554)' },
+  { value: 'tech', label: '科技', bg: 'bg-gradient-to-br from-gray-950 via-slate-900 to-indigo-950', body: 'text-slate-300', previewBg: 'linear-gradient(135deg, #030712, #1e1b4b)' },
+  { value: 'minimal', label: '简约', bg: 'bg-gradient-to-br from-white to-gray-50', body: 'text-gray-600', previewBg: 'linear-gradient(135deg, #fff, #f9fafb)' },
+  { value: 'education', label: '教育', bg: 'bg-gradient-to-br from-emerald-50 to-white', body: 'text-gray-700', previewBg: 'linear-gradient(135deg, #ecfdf5, #fff)' },
 ]
 const currentTheme = ref(themes[0])
 const showMeta = ref(true)
@@ -239,7 +275,7 @@ const speaker = ref(store.speaker)
 const department = ref(store.department)
 const eventType = ref(store.eventType)
 const startTime = ref(store.startTime)
-const saveStatus = reactive({ text: '', class: 'text-gray-400' })
+const saveStatus = reactive({ text: '', dot: 'bg-transparent', class: 'text-gray-400' })
 let saveTimer = null
 let saving = false
 
@@ -303,7 +339,7 @@ async function doSave() {
 
   // Sync sidebar
   shellRef.value?.load()
-  saveStatus.text = '已保存'; saveStatus.class = 'text-green-500'
+  saveStatus.text = '已保存'; saveStatus.class = 'text-green-500'; saveStatus.dot = 'bg-green-400'
   document.title = (projectTitle.value || 'PPT 演讲助手编辑器') + ' — 编辑器'
   setTimeout(() => { if (saveStatus.text === '已保存') saveStatus.text = '' }, 2000)
   } finally { saving = false }
@@ -311,8 +347,8 @@ async function doSave() {
 
 function autoSave() {
   clearTimeout(saveTimer)
-  saveStatus.text = '保存中...'; saveStatus.class = 'text-gray-400'
-  saveTimer = setTimeout(() => doSave().catch(e => { console.warn('Save failed:', e); saveStatus.text = '失败'; saveStatus.class = 'text-red-500' }), 600)
+  saveStatus.text = '保存中...'; saveStatus.class = 'text-gray-400'; saveStatus.dot = 'bg-amber-400'
+  saveTimer = setTimeout(() => doSave().catch(e => { console.warn('Save failed:', e); saveStatus.text = '失败'; saveStatus.class = 'text-red-500'; saveStatus.dot = 'bg-red-400' }), 600)
 }
 
 function autoSaveAndPreview() {
@@ -493,4 +529,24 @@ watch(() => store.currentProjectId, (n, o) => { if (n && n !== o) restoreFromDB(
 
 <style>
 @import '../assets/slides.css';
+
+/* Metadata panel slide transition */
+.meta-slide-enter-active,
+.meta-slide-leave-active {
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+.meta-slide-enter-from,
+.meta-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom-width: 0;
+}
+.meta-slide-enter-to,
+.meta-slide-leave-from {
+  opacity: 1;
+  max-height: 80px;
+}
 </style>
