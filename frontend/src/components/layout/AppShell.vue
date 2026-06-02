@@ -105,12 +105,20 @@
           <h3 class="text-sm font-medium text-gray-500 mb-3">AI 服务</h3>
           <div class="space-y-3 mb-6">
             <select v-model="cfg.aiProvider" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
-              <option value="gateway">LLM Gateway</option><option value="claude">Claude API</option><option value="openai">OpenAI API</option><option value="ollama">Ollama 本地</option>
+              <option value="gateway">LLM Gateway</option><option value="claude">Claude官方API</option><option value="openai">OpenAI官方API</option><option value="ollama">Ollama 本地</option>
             </select>
-            <template v-if="cfg.aiProvider !== 'ollama'">
-              <input v-model="cfg.baseUrl" placeholder="Base URL" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-              <input v-model="cfg.apiKey" type="password" placeholder="API Key" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+            <template v-if="cfg.aiProvider === 'gateway'">
+              <input v-model="cfg.baseUrl" placeholder="Base URL（必填）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+              <input v-model="cfg.apiKey" type="password" placeholder="API Key（必填）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
               <input v-model="cfg.model" placeholder="Model name" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+            </template>
+            <template v-if="cfg.aiProvider === 'claude'">
+              <input v-model="cfg.claudeApiKey" type="password" placeholder="Claude API Key（必填）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+              <input v-model="cfg.claudeModel" placeholder="Model（默认 claude-opus-4-8）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+            </template>
+            <template v-if="cfg.aiProvider === 'openai'">
+              <input v-model="cfg.openaiApiKey" type="password" placeholder="OpenAI API Key（必填）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+              <input v-model="cfg.openaiModel" placeholder="Model（默认 gpt-5.5）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
             </template>
             <template v-if="cfg.aiProvider === 'ollama'">
               <input v-model="cfg.ollamaEndpoint" placeholder="Endpoint" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
@@ -152,13 +160,23 @@ const cfg = ref({
   baseUrl: import.meta.env.VITE_AI_GATEWAY_BASE_URL || '',
   apiKey: import.meta.env.VITE_AI_GATEWAY_API_KEY || '',
   model: import.meta.env.VITE_AI_GATEWAY_MODEL || '',
+  claudeApiKey: import.meta.env.VITE_CLAUDE_API_KEY || '',
+  claudeModel: import.meta.env.VITE_CLAUDE_API_MODEL || '',
+  openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+  openaiModel: import.meta.env.VITE_OPENAI_API_MODEL || '',
   ollamaEndpoint: import.meta.env.VITE_OLLAMA_ENDPOINT || 'http://localhost:11434',
   ollamaModel: import.meta.env.VITE_OLLAMA_MODEL || 'llama2',
   mcpUrl: import.meta.env.VITE_DOCMOST_MCP_URL || '',
   mcpToken: import.meta.env.VITE_DOCMOST_TOKEN || ''
 })
 
-const hasAI = computed(() => cfg.value.aiProvider === 'ollama' || !!(cfg.value.baseUrl || cfg.value.apiKey))
+const hasAI = computed(() => {
+  const c = cfg.value
+  if (c.aiProvider === 'ollama') return true
+  if (c.aiProvider === 'claude') return !!c.claudeApiKey
+  if (c.aiProvider === 'openai') return !!c.openaiApiKey
+  return !!(c.baseUrl || c.apiKey)
+})
 const sortedProjects = computed(() => {
   const list = [...projects.value]
   list.sort((a, b) => { if (a.pinned && !b.pinned) return -1; if (!a.pinned && b.pinned) return 1; return new Date(b.updated_at) - new Date(a.updated_at) })
@@ -174,14 +192,16 @@ async function load() { try { projects.value = await getProjectList() } catch {}
 
 async function saveSettings() {
   try {
-    // Save to .env.local via API
-    await fetch('/api/save-env', {
+    const resp = await fetch('/api/save-env', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cfg.value)
     })
-  } catch (e) { /* ignore */ }
-  showSettings.value = false
+    if (!resp.ok) throw new Error('保存失败')
+    showSettings.value = false
+  } catch (e) {
+    alert('设置保存失败: ' + e.message)
+  }
 }
 
 async function openProject(id) {

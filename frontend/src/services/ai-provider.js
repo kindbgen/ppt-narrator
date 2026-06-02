@@ -1,12 +1,25 @@
 /**
  * 多模型AI服务适配器
  */
+
+const DEFAULT_MAX_TOKENS = parseInt(import.meta.env.VITE_AI_MAX_TOKENS) || 4096
+const PPT_MAX_TOKENS = parseInt(import.meta.env.VITE_AI_PPT_MAX_TOKENS) || 16000
+const NARRATION_MAX_TOKENS = parseInt(import.meta.env.VITE_AI_NARRATION_MAX_TOKENS) || 2000
+
 class AIProvider {
   constructor(config) {
     this.config = config
   }
   async generate(prompt, options = {}) {
     throw new Error('Method must be implemented')
+  }
+  _extractText(data) {
+    if (typeof data.content === 'string') return data.content
+    if (Array.isArray(data.content)) {
+      const textBlock = data.content.find(b => b.type === 'text')
+      if (textBlock?.text) return textBlock.text
+    }
+    throw new Error('Cannot extract text from Claude response')
   }
 }
 
@@ -22,16 +35,20 @@ class ClaudeProvider extends AIProvider {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2024-02-15'
       },
       body: JSON.stringify({
-        model: this.config.model || 'claude-3-5-sonnet-20241022',
-        max_tokens: options.maxTokens || 4096,
+        model: this.config.model || 'claude-opus-4-8',
+        max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
         messages: [{ role: 'user', content: prompt }]
       })
     })
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`Claude API error (HTTP ${response.status}): ${errText.slice(0, 200)}`)
+    }
     const data = await response.json()
-    return data.content[0].text
+    return this._extractText(data)
   }
 }
 
@@ -49,11 +66,15 @@ class OpenAIProvider extends AIProvider {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: this.config.model || 'gpt-4',
-        max_tokens: options.maxTokens || 4096,
+        model: this.config.model || 'gpt-5.5',
+        max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
         messages: [{ role: 'user', content: prompt }]
       })
     })
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`OpenAI API error (HTTP ${response.status}): ${errText.slice(0, 200)}`)
+    }
     const data = await response.json()
     return data.choices[0].message.content
   }
@@ -70,8 +91,13 @@ class OllamaProvider extends AIProvider {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: this.config.model || 'llama2', prompt, stream: false })
     })
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`Ollama API error (HTTP ${response.status}): ${errText.slice(0, 200)}`)
+    }
     const data = await response.json()
-    return data.response
+    if (data.error) throw new Error(`Ollama error: ${data.error}`)
+    return data.response || ''
   }
 }
 
@@ -100,7 +126,7 @@ class GatewayProvider extends AIProvider {
         },
         body: JSON.stringify({
           model,
-          max_tokens: options.maxTokens || 4096,
+          max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
           messages: [{ role: 'user', content: prompt }]
         })
       })
@@ -165,7 +191,7 @@ class GatewayProvider extends AIProvider {
       },
       body: JSON.stringify({
         model,
-        max_tokens: options.maxTokens || 4096,
+        max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
         messages: [{ role: 'user', content: prompt }]
       })
     })
@@ -464,7 +490,7 @@ POINTS:
 - 每页2-4个要点
 - 只输出上述格式，不要其他文字`
 
-    const result = await this.provider.generate(prompt, { maxTokens: 16000 })
+    const result = await this.provider.generate(prompt, { maxTokens: PPT_MAX_TOKENS })
     return this._parseSlides(result)
   }
 
@@ -708,7 +734,7 @@ POINTS:
 
 只输出JSON：{"narration":"旁白...","keywords":["词1"],"tips":["提示1"]}`
 
-    const result = await this.provider.generate(prompt, { maxTokens: 2000 })
+    const result = await this.provider.generate(prompt, { maxTokens: NARRATION_MAX_TOKENS })
     try {
       const m = result.match(/\{[\s\S]*\}/)
       if (m) return JSON.parse(m[0])

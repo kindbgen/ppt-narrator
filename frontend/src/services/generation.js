@@ -33,8 +33,8 @@ export async function generatePPTAndNarrations({
 }) {
   const aiConfig = provider === 'gateway'
     ? { baseUrl: settings.baseUrl || '', apiKey: settings.apiKey || '', model: settings.model || '' }
-    : provider === 'claude' ? { apiKey: settings.apiKey || '' }
-    : provider === 'openai' ? { apiKey: settings.apiKey || '' }
+    : provider === 'claude' ? { apiKey: settings.apiKey || '', model: settings.model || '' }
+    : provider === 'openai' ? { apiKey: settings.apiKey || '', model: settings.model || '' }
     : {}
   const ai = new AIService(provider, aiConfig)
 
@@ -118,8 +118,8 @@ export async function resumeGeneration(store) {
     // Read secrets from env vars (not stored in localStorage for security)
     const aiConfig = state.provider === 'gateway'
       ? { baseUrl: import.meta.env.VITE_AI_GATEWAY_BASE_URL || '', apiKey: import.meta.env.VITE_AI_GATEWAY_API_KEY || '', model: import.meta.env.VITE_AI_GATEWAY_MODEL || '' }
-      : state.provider === 'claude' ? { apiKey: import.meta.env.VITE_CLAUDE_API_KEY || '' }
-      : state.provider === 'openai' ? { apiKey: import.meta.env.VITE_OPENAI_API_KEY || '' }
+      : state.provider === 'claude' ? { apiKey: import.meta.env.VITE_CLAUDE_API_KEY || '', model: import.meta.env.VITE_CLAUDE_API_MODEL || '' }
+      : state.provider === 'openai' ? { apiKey: import.meta.env.VITE_OPENAI_API_KEY || '', model: import.meta.env.VITE_OPENAI_API_MODEL || '' }
       : {}
     const ai = new AIService(state.provider, aiConfig)
     const slides = project.slides

@@ -20,11 +20,20 @@ function saveEnvPlugin() {
 
             const map = {
               aiProvider: 'VITE_AI_PROVIDER',
+              // LLM Gateway
               baseUrl: 'VITE_AI_GATEWAY_BASE_URL',
               apiKey: 'VITE_AI_GATEWAY_API_KEY',
               model: 'VITE_AI_GATEWAY_MODEL',
+              // Claude 官方 API
+              claudeApiKey: 'VITE_CLAUDE_API_KEY',
+              claudeModel: 'VITE_CLAUDE_API_MODEL',
+              // OpenAI 官方 API
+              openaiApiKey: 'VITE_OPENAI_API_KEY',
+              openaiModel: 'VITE_OPENAI_API_MODEL',
+              // Ollama
               ollamaEndpoint: 'VITE_OLLAMA_ENDPOINT',
               ollamaModel: 'VITE_OLLAMA_MODEL',
+              // Wiki MCP
               mcpUrl: 'VITE_DOCMOST_MCP_URL',
               mcpToken: 'VITE_DOCMOST_TOKEN'
             }

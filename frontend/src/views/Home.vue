@@ -164,7 +164,17 @@ function handleUpload(e) { const f = e.target.files[0]; if (f) { const r = new F
 async function generate() {
   if (!rawContent.value) return
   const s = shell.value?.cfg || {}
-  doGenerate(s.aiProvider || 'gateway', s)
+  const provider = s.aiProvider || 'gateway'
+  // Map provider-specific fields to flat settings for generation service
+  const settings = { ...s }
+  if (provider === 'claude') {
+    settings.apiKey = s.claudeApiKey || ''
+    settings.model = s.claudeModel || ''
+  } else if (provider === 'openai') {
+    settings.apiKey = s.openaiApiKey || ''
+    settings.model = s.openaiModel || ''
+  }
+  doGenerate(provider, settings)
 }
 
 function quickTest() {
