@@ -62,14 +62,15 @@
               <input v-model="speaker" @input="autoSaveAndPreview" placeholder="姓名" class="w-24 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-300" />
             </label>
             <label class="flex flex-col gap-1">
-              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">部门</span>
+              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">部门/公司</span>
               <input v-model="department" @input="autoSaveAndPreview" placeholder="部门/公司" class="w-28 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-300" />
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">类型</span>
-              <select v-model="eventType" @change="autoSaveAndPreview" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
-                <option value="内部技术讲座">内部技术讲座</option><option value="内部培训">内部培训</option><option value="技术分享">技术分享</option><option value="项目汇报">项目汇报</option>
-              </select>
+              <input v-model="eventType" @change="autoSaveAndPreview" list="event-types" class="w-28 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none placeholder-gray-300" placeholder="输入或选择" />
+              <datalist id="event-types">
+                <option value="内部技术讲座"/><option value="内部培训"/><option value="技术分享"/><option value="项目汇报"/>
+              </datalist>
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">日期</span>
@@ -97,7 +98,7 @@
         <!-- Left: Slide List -->
         <aside class="w-56 border-r border-gray-100 bg-gray-50/50 overflow-y-auto shrink-0">
           <div class="px-4 py-3 flex items-center justify-between">
-            <span class="text-xs font-medium text-gray-400 uppercase">页面 ({{ store.totalPages }})</span>
+            <span class="text-xs font-medium text-gray-400 uppercase">页面 ({{ store.totalPages }}) · {{ totalDuration }}</span>
           </div>
           <div class="px-4 pb-2 text-[11px]" :class="!!store.activeGenerations[store.currentProjectId] ? 'text-amber-500' : 'text-gray-300'">{{ !!store.activeGenerations[store.currentProjectId] ? '⏳ 正在生成PPT和旁白中...' : '💡 拖拽页面可调整排序' }}</div>
           <div class="px-2 space-y-0.5">
@@ -223,6 +224,13 @@ const showExport = ref(false)
 const currentSlide = computed(() => {
   const s = store.currentSlide
   return { title: s.title || '', content: s.content || '', duration: s.duration || 120, narration: s.narration || '', keyPoints: s.keyPoints || [], keywords: s.keywords || [], tips: s.tips || [], layout: s.layout || 'content' }
+})
+
+const totalDuration = computed(() => {
+  const totalSec = store.slides.reduce((sum, s) => sum + (s.duration || 120), 0)
+  const min = Math.floor(totalSec / 60)
+  const sec = totalSec % 60
+  return sec > 0 ? `${min} 分 ${sec} 秒` : `${min} 分钟`
 })
 
 // ---- Editable content ----

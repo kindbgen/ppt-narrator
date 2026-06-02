@@ -7,7 +7,10 @@
     <div class="w-[35%] flex flex-col border-r border-gray-800/50">
       <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-800/30 shrink-0">
         <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">演讲旁白</span>
-        <span class="text-xs text-gray-500 tabular-nums">{{ currentPage + 1 }}/{{ slides.length }}</span>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-gray-600">{{ totalDuration }}</span>
+          <span class="text-xs text-gray-500 tabular-nums">{{ currentPage + 1 }}/{{ slides.length }}</span>
+        </div>
       </div>
 
       <!-- Timer -->
@@ -19,6 +22,11 @@
         </div>
         <div class="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
           <div :class="timerBarColor" class="h-full transition-all duration-1000 rounded-full" :style="{ width: timerPercent + '%' }"></div>
+        </div>
+        <div class="mt-2 flex items-center gap-2">
+          <span class="text-xs text-gray-500">⏱ 已过</span>
+          <span :class="elapsedColor" class="text-sm font-bold tabular-nums">{{ formatElapsed }}</span>
+          <span class="text-xs text-gray-600">/ {{ totalDuration }}</span>
         </div>
       </div>
 
@@ -88,10 +96,22 @@ const pageListRef = ref(null)
 const slides = ref([])
 const currentPage = ref(0)
 const remaining = ref(120)
+const elapsed = ref(0)
 const isPaused = ref(false)
 let timerInterval = null
 
 const currentSlide = computed(() => slides.value[currentPage.value] || {})
+
+const totalDuration = computed(() => {
+  const totalSec = slides.value.reduce((sum, s) => sum + (s.duration || 120), 0)
+  const min = Math.floor(totalSec / 60)
+  const sec = totalSec % 60
+  return sec > 0 ? `总时长 ${min} 分 ${sec} 秒` : `总时长 ${min} 分钟`
+})
+
+const totalSec = computed(() => slides.value.reduce((sum, s) => sum + (s.duration || 120), 0))
+const formatElapsed = computed(() => formatTime(elapsed.value))
+const elapsedColor = computed(() => elapsed.value > totalSec.value ? 'text-red-400' : 'text-gray-300')
 
 const themeConfig = {
   business:  { bg: 'bg-gradient-to-br from-slate-800 to-blue-950', title: 'text-white', body: 'text-blue-100' },
@@ -115,7 +135,7 @@ watch(currentPage, async () => {
   if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
 })
 
-function startTimer() { stopTimer(); timerInterval = setInterval(() => { if (!isPaused.value && remaining.value > 0) { remaining.value--; sync.broadcastTimerUpdate(0, remaining.value) } }, 1000) }
+function startTimer() { stopTimer(); timerInterval = setInterval(() => { elapsed.value++; if (!isPaused.value) { if (remaining.value > 0) remaining.value--; sync.broadcastTimerUpdate(0, remaining.value) } }, 1000) }
 function stopTimer() { clearInterval(timerInterval); timerInterval = null }
 function resetTimer() { remaining.value = currentSlide.value.duration || 120; isPaused.value = false; startTimer() }
 function togglePause() { isPaused.value = !isPaused.value; if (!isPaused.value) startTimer() }
@@ -127,11 +147,23 @@ onMounted(() => {
   document.title = 'PPT演讲助手'
   const saved = localStorage.getItem('ppt-slides')
   if (saved) try { slides.value = JSON.parse(saved) } catch {}
-  sync.on('PRESENTATION_START', (data) => { slides.value = data.slides; currentPage.value = 0; resetTimer() })
-  if (slides.value.length > 0) { sync.broadcastPresentationStart(slides.value); sync.broadcastPageChange(0, slides.value[0]?.narration); resetTimer() }
+
+  // Resume elapsed from persisted start time (survives page refresh)
+  const startTs = localStorage.getItem('ppt-presentation-start')
+  if (startTs) elapsed.value = Math.floor((Date.now() - Number(startTs)) / 1000)
+
+  sync.on('PRESENTATION_START', (data) => {
+    slides.value = data.slides; currentPage.value = 0; elapsed.value = 0
+    localStorage.setItem('ppt-presentation-start', Date.now())
+    resetTimer()
+  })
+  if (slides.value.length > 0) {
+    if (!startTs) localStorage.setItem('ppt-presentation-start', Date.now())
+    sync.broadcastPresentationStart(slides.value); sync.broadcastPageChange(0, slides.value[0]?.narration); resetTimer()
+  }
   mainEl.value?.focus()
 })
-onUnmounted(() => { stopTimer(); sync.off('PRESENTATION_START'); sync.broadcastPresentationEnd() })
+onUnmounted(() => { stopTimer(); sync.off('PRESENTATION_START'); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd() })
 </script>
 
 <style>
