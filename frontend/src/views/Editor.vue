@@ -374,7 +374,7 @@ function downloadBlob(content, filename, type = 'text/plain') {
 
 function buildSlideHTML() {
   return store.slides.map((s, i) => {
-    const title = s.layout !== 'cover' && s.layout !== 'section' && s.layout !== 'closing'
+    const title = s.layout !== 'cover' && s.layout !== 'toc' && s.layout !== 'section' && s.layout !== 'closing'
       ? `<h2 class="slide-title">${s.title}</h2>` : ''
     return `<div class="slide">${title}<div class="slide-content">${s.content}</div></div>`
   }).join('\n')
@@ -401,8 +401,8 @@ function exportPPT(format) {
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;${bg}color:${textColor}}
-  .slide{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;${format==='pdf'?'page-break-after:always;':''}}
-  .slide:last-child{page-break-after:auto}
+  .slide{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;${format==='pdf'?'page-break-after:always;':'margin-bottom:40px;padding-bottom:80px;border-bottom:2px dashed rgba(128,128,128,0.2)'}}
+  .slide:last-child{page-break-after:auto;border-bottom:none;margin-bottom:0;padding-bottom:60px}
   .slide-title{font-size:36px;font-weight:700;margin-bottom:24px;color:${titleColor}}
   .slide-content{max-width:800px;width:100%}
   /* PPT styles */
@@ -448,13 +448,19 @@ function exportPPT(format) {
   .ppt-closing{text-align:center;padding:80px 20px}
   .ppt-closing h1{font-size:48px;font-weight:300;letter-spacing:8px;margin-bottom:40px;color:${titleColor}}
   .ppt-closing-meta{display:flex;justify-content:center;gap:32px;font-size:17px;opacity:.6;border-top:1px solid rgba(255,255,255,.12);padding-top:28px;flex-wrap:wrap}
-  @media print{body{margin:0;padding:0}.slide{min-height:100vh;page-break-after:always}}
+  @page{margin:0}@media print{body{margin:0;padding:0}.slide{min-height:100vh;page-break-after:always}}
 </style></head><body>${buildSlideHTML()}</body></html>`
 
   if (format === 'pdf') {
-    const w = window.open('', '_blank', 'width=1000,height=800')
-    w.document.write(html); w.document.close()
-    setTimeout(() => w.print(), 400)
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999'
+    document.body.appendChild(iframe)
+    iframe.contentDocument.write(html)
+    iframe.contentDocument.close()
+    iframe.onload = () => setTimeout(() => {
+      iframe.contentWindow.print()
+      setTimeout(() => document.body.removeChild(iframe), 500)
+    }, 300)
   } else if (format === 'html') {
     downloadBlob(html, `${title}.html`, 'text/html')
   } else if (format === 'markdown') {
@@ -486,7 +492,7 @@ function exportNarration(format) {
   .page:last-child{border-bottom:none;page-break-after:auto}
   .page h3{font-size:18px;font-weight:600;color:${titleColor};margin-bottom:8px}
   .page p{font-size:16px;line-height:1.8;opacity:.85;white-space:pre-wrap}
-  @media print{body{margin:0}.wrap{padding:30px}}
+  @page{margin:0}@media print{body{margin:0}.wrap{padding:30px}}
 </style></head><body><div class="wrap">
 <h1>${fileName}</h1>
 ${meta.length ? `<div class="meta">${meta.join(' &nbsp;|&nbsp; ')}</div>` : ''}
@@ -494,8 +500,15 @@ ${store.slides.map((s, i) => `<div class="page"><h3>${i + 1}. ${s.title}</h3><p>
 </div></body></html>`
 
   if (format === 'pdf') {
-    const w = window.open('', '_blank', 'width=1000,height=800')
-    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400) }
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999'
+    document.body.appendChild(iframe)
+    iframe.contentDocument.write(html)
+    iframe.contentDocument.close()
+    iframe.onload = () => setTimeout(() => {
+      iframe.contentWindow.print()
+      setTimeout(() => document.body.removeChild(iframe), 500)
+    }, 300)
   } else {
     downloadBlob(html, `${fileName}.html`, 'text/html')
   }
