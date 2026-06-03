@@ -1,22 +1,13 @@
 /**
- * 双屏同步工具 - 统一入口
+ * 双屏同步工具 - 统一使用 BroadcastChannel
  *
- * Auto-detects environment at runtime:
- * - Electron: Uses IPC (main process message broker)
- * - Browser: Uses BroadcastChannel API
+ * Works in both browser tabs and Electron windows,
+ * since Electron BrowserWindows share the same Chromium session.
  */
-import { useSync as useElectronSync } from './sync-electron'
 
-// Check if running inside Electron (contextBridge exposes window.pptSync)
-function isElectron() {
-  return !!(window.pptSync)
-}
+let instance = null
 
-// ============ Browser Implementation (BroadcastChannel) ============
-
-let browserInstance = null
-
-class BroadcastChannelSync {
+class PPTSync {
   constructor() {
     this.channel = new BroadcastChannel('ppt-narrator-sync')
     this.listeners = new Map()
@@ -75,21 +66,9 @@ class BroadcastChannelSync {
   }
 }
 
-// ============ Public API ============
-
-/**
- * Returns the appropriate sync implementation:
- * - Electron IPC adapter if running in Electron
- * - BroadcastChannel adapter if running in browser
- */
 export function useSync() {
-  if (isElectron()) {
-    return useElectronSync()
+  if (!instance) {
+    instance = new PPTSync()
   }
-
-  // Browser fallback
-  if (!browserInstance) {
-    browserInstance = new BroadcastChannelSync()
-  }
-  return browserInstance
+  return instance
 }
