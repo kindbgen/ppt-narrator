@@ -1,0 +1,64 @@
+# Electron Builder Configuration
+# Cross-platform packaging for Windows, macOS, and Linux
+appId: com.pptnarrator.app
+productName: PPT Narrator
+copyright: Copyright © 2025
+
+directories:
+  buildResources: build
+  output: release
+
+files:
+  - dist
+  - dist-electron
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!node_modules/*'
+  - node_modules/sql.js/dist/sql-wasm.wasm
+
+asar: true
+asarUnpack:
+  - '**/*.wasm'
+
+# ===== macOS =====
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+
+dmg:
+  artifactName: ${name}-${version}-mac.${ext}
+
+# ===== Windows =====
+win:
+  executableName: ppt-narrator
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: PPT Narrator
+
+# ===== Linux =====
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+  maintainer: ppt-narrator@example.com
+
+appImage:
+  artifactName: ${name}-${version}-linux.${ext}
+
+deb:
+  artifactName: ${name}-${version}-linux.${ext}

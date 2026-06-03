@@ -2,6 +2,8 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import fs from 'node:fs'
+
+const isBuild = process.argv.includes('build')
 import path from 'node:path'
 
 function saveEnvPlugin() {
@@ -56,14 +58,27 @@ function saveEnvPlugin() {
   }
 }
 
-export default defineConfig(({ mode }) => {
+async function getPlugins() {
+  const plugins = [vue(), tailwindcss(), saveEnvPlugin()]
+  if (isBuild) {
+    const electron = (await import('vite-plugin-electron/simple')).default
+    plugins.push(electron({
+      main: { entry: 'electron/main.cjs' },
+      preload: { input: 'electron/preload.cjs' },
+    }))
+  }
+  return plugins
+}
+
+export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const mcpUrl = env.VITE_DOCMOST_MCP_URL || ''
   const origin = mcpUrl ? new URL(mcpUrl).origin : 'http://localhost'
   const pathname = mcpUrl ? new URL(mcpUrl).pathname : '/'
 
   return {
-    plugins: [vue(), tailwindcss(), saveEnvPlugin()],
+    base: './',
+    plugins: await getPlugins(),
     server: {
       proxy: {
         '/api/mcp-proxy': { target: origin, changeOrigin: true, secure: false, rewrite: () => pathname }

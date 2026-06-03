@@ -539,9 +539,16 @@ function startPresentation() {
   clearTimeout(saveTimer)
   doSave().finally(() => {
     localStorage.setItem('ppt-slides', JSON.stringify(store.slides))
-    const w = 1200; const h = 780
-    window.open('/narrator', 'narrator', `width=${w},height=${h},left=${Math.round((screen.width - w) / 2)},top=${Math.round((screen.height - h) / 2)}`)
-    router.push('/presenter')
+    if (window.electronAPI) {
+      // Electron: open both Presenter and Narrator as native windows
+      window.electronAPI.openPresenterWindow()
+      window.electronAPI.openNarratorWindow()
+    } else {
+      // Browser: open popup + navigate
+      const w = 1200; const h = 780
+      window.open('/#/narrator', 'narrator', `width=${w},height=${h},left=${Math.round((screen.width - w) / 2)},top=${Math.round((screen.height - h) / 2)}`)
+      router.push('/presenter')
+    }
   })
 }
 

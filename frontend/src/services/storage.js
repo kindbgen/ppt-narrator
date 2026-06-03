@@ -10,7 +10,7 @@ const DB_KEY = 'ppt-narrator-db'
 
 let db = null
 
-const WASM_URL = '/sql-wasm.wasm'
+const WASM_URL = import.meta.env.DEV ? '/sql-wasm.wasm' : './sql-wasm.wasm'
 
 // ============ Safe value ============
 

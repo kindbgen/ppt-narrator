@@ -1,7 +1,22 @@
 /**
- * 双屏同步工具 - 使用 BroadcastChannel API
+ * 双屏同步工具 - 统一入口
+ *
+ * Auto-detects environment at runtime:
+ * - Electron: Uses IPC (main process message broker)
+ * - Browser: Uses BroadcastChannel API
  */
-export class PPTSync {
+import { useSync as useElectronSync } from './sync-electron'
+
+// Check if running inside Electron (contextBridge exposes window.pptSync)
+function isElectron() {
+  return !!(window.pptSync)
+}
+
+// ============ Browser Implementation (BroadcastChannel) ============
+
+let browserInstance = null
+
+class BroadcastChannelSync {
   constructor() {
     this.channel = new BroadcastChannel('ppt-narrator-sync')
     this.listeners = new Map()
@@ -18,9 +33,6 @@ export class PPTSync {
     }
   }
 
-  /**
-   * 广播页面切换事件
-   */
   broadcastPageChange(pageIndex, narration) {
     this.channel.postMessage(JSON.parse(JSON.stringify({
       type: 'PAGE_CHANGE',
@@ -28,9 +40,6 @@ export class PPTSync {
     })))
   }
 
-  /**
-   * 广播演示开始事件
-   */
   broadcastPresentationStart(slides) {
     this.channel.postMessage(JSON.parse(JSON.stringify({
       type: 'PRESENTATION_START',
@@ -38,9 +47,6 @@ export class PPTSync {
     })))
   }
 
-  /**
-   * 广播演示结束事件
-   */
   broadcastPresentationEnd() {
     this.channel.postMessage({
       type: 'PRESENTATION_END',
@@ -48,9 +54,6 @@ export class PPTSync {
     })
   }
 
-  /**
-   * 广播计时更新事件
-   */
   broadcastTimerUpdate(elapsedTime, remainingTime) {
     this.channel.postMessage(JSON.parse(JSON.stringify({
       type: 'TIMER_UPDATE',
@@ -58,35 +61,35 @@ export class PPTSync {
     })))
   }
 
-  /**
-   * 订阅事件
-   */
   on(event, callback) {
     this.listeners.set(event, callback)
   }
 
-  /**
-   * 取消订阅
-   */
   off(event) {
     this.listeners.delete(event)
   }
 
-  /**
-   * 关闭连接
-   */
   close() {
     this.channel.close()
     this.listeners.clear()
   }
 }
 
-// 单例实例
-let syncInstance = null
+// ============ Public API ============
 
+/**
+ * Returns the appropriate sync implementation:
+ * - Electron IPC adapter if running in Electron
+ * - BroadcastChannel adapter if running in browser
+ */
 export function useSync() {
-  if (!syncInstance) {
-    syncInstance = new PPTSync()
+  if (isElectron()) {
+    return useElectronSync()
   }
-  return syncInstance
+
+  // Browser fallback
+  if (!browserInstance) {
+    browserInstance = new BroadcastChannelSync()
+  }
+  return browserInstance
 }

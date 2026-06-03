@@ -46,11 +46,16 @@ const themeClasses = computed(() => {
 
 // --- Lifecycle ---
 onMounted(() => {
-  // Fallback: read from localStorage in case we missed the PRESENTATION_START event
   const saved = localStorage.getItem('ppt-slides')
   if (saved && slides.value.length === 0) {
     try { slides.value = JSON.parse(saved) } catch (e) { /* ignore */ }
     document.title = slides.value[0]?.title || 'PPT 演讲助手'
+  }
+
+  // Notify Narrator of the current slides (handles project switch)
+  if (slides.value.length > 0) {
+    sync.broadcastPresentationStart(slides.value)
+    sync.broadcastPageChange(0, slides.value[0]?.narration)
   }
 
   sync.on('PAGE_CHANGE', (data) => {

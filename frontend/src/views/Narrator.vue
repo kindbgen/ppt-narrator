@@ -107,6 +107,13 @@
             ↺ 重置本页
           </button>
         </div>
+        <!-- Return to Editor -->
+        <div class="mt-2">
+          <button @click="goBack"
+            class="w-full py-2 rounded-xl text-xs font-medium bg-white/[0.03] text-gray-500 hover:bg-white/[0.08] hover:text-gray-400 transition-all">
+            ← 返回编辑器
+          </button>
+        </div>
       </div>
     </div>
 
@@ -136,9 +143,11 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSync } from '../utils/sync'
 
 const sync = useSync()
+const router = useRouter()
 const mainEl = ref(null)
 const pageListRef = ref(null)
 
@@ -201,14 +210,15 @@ function togglePause() { isPaused.value = !isPaused.value; if (!isPaused.value) 
 function goToPage(i) { currentPage.value = i; resetTimer(); sync.broadcastPageChange(i, currentSlide.value.narration) }
 function nextSlide() { if (currentPage.value < slides.value.length - 1) { currentPage.value++; resetTimer(); sync.broadcastPageChange(currentPage.value, currentSlide.value.narration) } }
 function prevSlide() { if (currentPage.value > 0) { currentPage.value--; resetTimer(); sync.broadcastPageChange(currentPage.value, currentSlide.value.narration) } }
+function goBack() { stopTimer(); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd(); router.push('/editor') }
 
 onMounted(() => {
   document.title = 'PPT演讲助手'
+  localStorage.removeItem('ppt-presentation-start')
+  elapsed.value = 0
+
   const saved = localStorage.getItem('ppt-slides')
   if (saved) try { slides.value = JSON.parse(saved) } catch {}
-
-  const startTs = localStorage.getItem('ppt-presentation-start')
-  if (startTs) elapsed.value = Math.floor((Date.now() - Number(startTs)) / 1000)
 
   sync.on('PRESENTATION_START', (data) => {
     slides.value = data.slides; currentPage.value = 0; elapsed.value = 0
@@ -220,7 +230,7 @@ onMounted(() => {
     resetTimer()
   })
   if (slides.value.length > 0) {
-    if (!startTs) localStorage.setItem('ppt-presentation-start', Date.now())
+    localStorage.setItem('ppt-presentation-start', Date.now())
     sync.broadcastPresentationStart(slides.value); sync.broadcastPageChange(0, slides.value[0]?.narration); resetTimer()
   }
   mainEl.value?.focus()

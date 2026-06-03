@@ -1,174 +1,147 @@
-# PPT演讲助手
+# PPT 演讲助手
 
-将Wiki文档转换为HTML格式PPT的工具，自动生成演讲旁白，支持双屏演示模式。
+AI 驱动的 PPT 生成与双屏演讲工具，支持 **Web 浏览器** 和 **Windows/macOS/Linux 桌面应用**。
 
 ## 功能特点
 
-- ✅ **多源内容输入**：支持Docmost Wiki、文件上传、手动粘贴
-- ✅ **AI智能生成**：自动分析内容结构，生成PPT和旁白
-- ✅ **多模型支持**：支持Claude、OpenAI、本地Ollama模型
-- ✅ **双屏演示**：演示屏播放PPT，旁白屏同步显示演讲稿
-- ✅ **智能倒计时**：每页倒计时提醒，帮助控制演讲节奏
+- ✅ **多源内容输入**：支持 Docmost Wiki、文件上传、手动粘贴
+- ✅ **AI 智能生成**：自动分析内容结构，生成 PPT 和旁白
+- ✅ **多模型支持**：LLM Gateway / Claude / OpenAI / Ollama
+- ✅ **双屏演示**：演示屏全屏播放 PPT，旁白屏同步显示演讲稿 + 倒计时
+- ✅ **智能计时**：每页剩余时间 + 演讲已过时长，暂停/重置控制
+- ✅ **本地存储**：SQLite（sql.js）持久化项目数据
+- ✅ **导出功能**：支持导出 HTML 和 PDF 格式
+- ✅ **跨平台桌面应用**：Electron 打包，原生多窗口 + IPC 同步
 
 ## 快速开始
 
-### 安装依赖
+### Web 浏览器
 
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
 
-### 配置AI服务
+打开 http://localhost:5173 即可使用。
 
-通过环境变量配置（创建 `.env.local`）：
+### 桌面应用
+
+```bash
+cd frontend
+npm install
+
+# 打包（三平台）
+npm run electron:build:mac     # macOS (.dmg)
+npm run electron:build:win     # Windows (.exe)
+npm run electron:build:linux   # Linux (.AppImage)
+```
+
+> macOS 首次打开时若提示"无法验证开发者"，右键 → 打开 → 确认即可。
+
+## 配置 AI 服务
+
+在 UI 设置面板中直接输入，或复制 `.env.example` 为 `.env.local` 填写：
 
 ```env
+# AI 提供商: gateway | claude | openai | ollama
+VITE_AI_PROVIDER=gateway
+
+# AI 通用配置
+VITE_AI_MAX_TOKENS=4096
+VITE_AI_PPT_MAX_TOKENS=16000
+VITE_AI_NARRATION_MAX_TOKENS=2000
+
 # LLM Gateway（推荐）
 VITE_AI_GATEWAY_BASE_URL=https://your-gateway.example.com
 VITE_AI_GATEWAY_API_KEY=sk-your-api-key
 VITE_AI_GATEWAY_MODEL=deepseek-v4-pro
 
-# 或 Claude
+# Claude 官方 API
 VITE_CLAUDE_API_KEY=sk-ant-your-api-key
+VITE_CLAUDE_API_MODEL=claude-opus-4-8
 
-# 或 OpenAI
+# OpenAI 官方 API
 VITE_OPENAI_API_KEY=sk-your-api-key
-```
+VITE_OPENAI_API_MODEL=gpt-5.5
 
-也可以在UI界面中直接输入配置。
+# Ollama 本地
+VITE_OLLAMA_ENDPOINT=http://localhost:11434
+VITE_OLLAMA_MODEL=qwen3
 
-### 启动应用
-
-```bash
-npm run dev
+# Docmost Wiki MCP（可选）
+VITE_DOCMOST_MCP_URL=https://your-wiki.example.com/api/mcp/streamable
+VITE_DOCMOST_TOKEN=your-wiki-token
 ```
 
 ## 使用流程
 
-### 1. 输入内容
+1. **输入内容** — 粘贴 Markdown/HTML、上传文件、或输入 Wiki URL
+2. **选择风格** — 商务 / 科技 / 简约 / 教育
+3. **选择模型** — LLM Gateway / Claude / OpenAI / Ollama
+4. **生成 PPT** — AI 自动分析结构、拆分页面、生成旁白
+5. **编辑调整** — 修改标题/内容/时长/旁白，拖拽排序页面
+6. **开始演示** — 演示屏 + 旁白屏自动同步翻页和计时
 
-选择内容来源：
-- **Docmost Wiki**：输入Wiki文档URL
-- **上传文件**：上传Markdown或HTML文件
-- **手动粘贴**：直接粘贴文档内容
+## 双屏操作
 
-### 2. 选择风格
+| 操作 | 快捷键 |
+|------|--------|
+| 上一页 / 下一页 | ← → |
+| 暂停 / 继续 | Space |
+| 重置计时 | 点击「重置本页」 |
 
-选择PPT模板风格：
-- **商务**：简洁专业，蓝色主色调
-- **科技**：现代动感，深色背景
-- **简约**：清爽优雅，浅色调
-- **教育**：清晰易读，高对比度
-
-### 3. 选择AI模型
-
-选择AI生成服务：
-- **Claude**：高质量生成（需API Key）
-- **OpenAI**：GPT-4模型（需API Key）
-- **本地模型**：Ollama无需API Key
-
-### 4. 生成PPT
-
-点击"生成PPT和旁白"，AI将自动：
-- 分析文档结构
-- 拆分页面内容
-- 生成演讲旁白
-- 预估每页时长
-
-### 5. 编辑调整
-
-在编辑器中微调：
-- 修改页面内容
-- 调整演讲时长
-- 编辑旁白文本
-- 添加演讲提示
-
-### 6. 开始演示
-
-点击"开始演示"，系统将：
-- 打开PPT演示窗口（主屏）
-- 打开旁白参考窗口（副屏）
-- 自动同步翻页
-- 显示倒计时提醒
-
-## 双屏使用技巧
-
-### 控制操作
-
-- **翻页**：在演示窗口点击"上一页/下一页"
-- **暂停计时**：点击"暂停"按钮
-- **重置计时**：点击"重置"按钮
-
-### 旁白窗口
-
-- 自动滚动到当前页旁白
-- 显示剩余时间提醒
-- 提供关键词提示
-- 显示演讲技巧提示
-
-## 配置文件
-
-### AI服务配置
-
-```yaml
-ai:
-  provider: claude  # 选择提供商
-  claude:
-    model: claude-3-5-sonnet-20241022
-    api_key: your-api-key
-```
-
-### 演示配置
-
-```yaml
-presentation:
-  default_duration: 120  # 默认每页时长(秒)
-  timer_thresholds:
-    warning: 30  # 黄色提醒
-    critical: 10  # 红色提醒
-```
+旁白窗口实时显示：当前页标题、旁白内容、关键词、演讲技巧提示。
 
 ## 技术架构
 
-- **前端**：Vue 3 + Vite + TailwindCSS
-- **PPT引擎**：Reveal.js
-- **同步机制**：BroadcastChannel API
-- **AI集成**：LLM Gateway / Claude / OpenAI / Ollama（纯前端直接调用）
-- **Wiki对接**：Docmost MCP（前端直接调用）
+| 层级 | 技术 |
+|------|------|
+| 前端框架 | Vue 3 + Vite 8 + Pinia |
+| 样式 | Tailwind CSS 4 |
+| PPT 引擎 | Reveal.js 6 |
+| 数据库 | SQLite (sql.js + IndexedDB) |
+| AI 集成 | LLM Gateway / Claude API / OpenAI API / Ollama |
+| 同步机制 | BroadcastChannel（浏览器）/ Electron IPC（桌面） |
+| 桌面打包 | Electron 42 + electron-builder |
+| Markdown | marked |
 
 ## 项目结构
 
 ```
 ppt-narrator/
-├── frontend/              # 前端项目
-│   ├── src/
-│   │   ├── views/        # 页面组件
-│   │   │   ├── Home.vue          # 首页：内容输入、风格选择、AI配置
-│   │   │   ├── Editor.vue        # 编辑器：微调PPT和旁白
-│   │   │   ├── Presenter.vue     # 演示屏：PPT全屏播放
-│   │   │   └── Narrator.vue      # 旁白屏：演讲提示
-│   │   ├── components/   # 通用组件
-│   │   ├── stores/       # Pinia状态管理
-│   │   ├── services/     # AI服务 + Wiki对接
-│   │   │   ├── ai-provider.js    # 多模型AI适配器
-│   │   │   └── docmost.js        # Docmost MCP客户端
-│   │   ├── utils/        # 工具函数
-│   │   │   ├── parser.js         # Markdown/HTML解析
-│   │   │   └── sync.js           # 双屏同步
-│   │   └── router/       # 路由配置
-│   └── package.json
-├── prompts/               # AI提示词模板
+├── frontend/
+│   ├── electron/                    # Electron 主进程
+│   │   ├── main.cjs                 #   窗口管理 + IPC 消息代理 + CSP
+│   │   └── preload.cjs              #   contextBridge 安全桥接层
+│   ├── build/                       # 打包资源（图标）
+│   ├── electron-builder.yml         # 三平台打包配置
+│   ├── package.json
+│   ├── vite.config.mjs              # Vite 配置（按需加载 Electron 插件）
+│   ├── public/
+│   │   └── sql-wasm.wasm            # SQLite WebAssembly
+│   └── src/
+│       ├── views/
+│       │   ├── Home.vue             # 首页：内容输入 + 风格选择 + 项目列表
+│       │   ├── Editor.vue           # 编辑器：调整 PPT 和旁白
+│       │   ├── Presenter.vue        # 演示屏：全屏播放 PPT
+│       │   └── Narrator.vue         # 旁白屏：演讲提示 + 倒计时
+│       ├── components/layout/
+│       │   └── AppShell.vue         # 侧边栏 + 设置面板
+│       ├── stores/
+│       │   └── ppt.js               # Pinia 状态管理
+│       ├── services/
+│       │   ├── ai-provider.js       # 多模型 AI 适配器
+│       │   ├── generation.js        # PPT 生成引擎
+│       │   ├── storage.js           # SQLite 本地存储
+│       │   └── docmost.js           # Docmost MCP 客户端
+│       ├── utils/
+│       │   ├── sync.js              # 双屏同步（自动检测 BroadcastChannel / IPC）
+│       │   ├── sync-electron.js     # Electron IPC 同步适配器
+│       │   └── parser.js            # Markdown/HTML 解析
+│       └── router/index.js          # Vue Router (hash 模式)
 └── README.md
 ```
-
-## 开发计划
-
-- [ ] Docmost API集成
-- [ ] 模板样式优化
-- [ ] 导出PDF功能
-- [ ] 演讲录制功能
-- [ ] 云存储集成
 
 ## 许可证
 
