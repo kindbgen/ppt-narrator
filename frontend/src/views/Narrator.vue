@@ -4,34 +4,35 @@
     tabindex="0" ref="mainEl">
 
     <!-- Left: Narration Panel (35%) -->
-    <div class="w-[35%] flex flex-col border-r border-gray-800/50 bg-gray-900/50">
+    <div class="w-[35%] flex flex-col border-r border-gray-800/40 bg-gray-950">
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-800/30 shrink-0">
-        <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">演讲旁白</span>
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800/30 shrink-0">
         <div class="flex items-center gap-3">
-          <span class="text-xs text-gray-600">{{ totalDuration }}</span>
-          <span class="text-xs text-gray-500 tabular-nums font-medium">{{ currentPage + 1 }}/{{ slides.length }}</span>
+          <button @click="goBack" class="text-gray-600 hover:text-gray-400 transition-colors" title="返回编辑器">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <span class="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em]">演讲旁白</span>
+        </div>
+        <div class="flex items-center gap-4 text-[11px] text-gray-600 tabular-nums">
+          <span>{{ totalDuration }}</span>
+          <span class="text-gray-500 font-medium">{{ currentPage + 1 }}/{{ slides.length }}</span>
         </div>
       </div>
 
       <!-- Timer Card -->
-      <div class="px-4 py-3 border-b border-gray-800/30 shrink-0">
-        <div class="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.04]">
-          <!-- Countdown -->
-          <div class="flex items-baseline gap-2 mb-3">
-            <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wider">当前页剩余</span>
-            <span :class="timerColor" class="text-5xl font-bold tabular-nums leading-none tracking-tight">{{ formatTime(remaining) }}</span>
-            <span class="text-xs text-gray-600">/ {{ formatTime(currentSlide.duration || 120) }}</span>
+      <div class="px-5 py-3 border-b border-gray-800/20 shrink-0">
+        <div class="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
+          <div class="flex items-baseline gap-2 mb-2">
+            <span class="text-[10px] font-medium text-gray-600 uppercase tracking-wider">剩余</span>
+            <span :class="timerColor" class="text-4xl font-bold tabular-nums leading-none tracking-tight">{{ formatTime(remaining) }}</span>
+            <span class="text-[11px] text-gray-600">/ {{ formatTime(currentSlide.duration || 120) }}</span>
           </div>
-          <!-- Progress Bar -->
-          <div class="h-1.5 bg-gray-800 rounded-full overflow-hidden mb-3">
+          <div class="h-1 bg-gray-800 rounded-full overflow-hidden mb-2">
             <div :class="timerBarColor" class="h-full transition-all duration-1000 rounded-full" :style="{ width: timerPercent + '%' }"></div>
           </div>
-          <!-- Elapsed -->
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wider">演讲已过</span>
-            <span :class="elapsedColor" class="text-sm font-bold tabular-nums">{{ formatElapsed }}</span>
-            <span class="text-[10px] text-gray-600">/ {{ totalDuration }}</span>
+            <span class="text-[10px] text-gray-600">已过</span>
+            <span :class="elapsedColor" class="text-xs font-bold tabular-nums">{{ formatElapsed }}</span>
           </div>
         </div>
       </div>
@@ -40,80 +41,58 @@
       <div class="px-3 py-2 border-b border-gray-800/20">
         <div ref="pageListRef" class="flex gap-1 overflow-x-auto scrollbar-none">
           <button v-for="(s, i) in slides" :key="i" @click="goToPage(i)" :data-page="i"
-            :class="currentPage === i ? 'bg-white/15 text-white ring-1 ring-white/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'"
-            class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all" :title="s.title">
+            :class="currentPage === i ? 'bg-white/12 text-white ring-1 ring-white/8' : 'text-gray-600 hover:text-gray-300 hover:bg-white/3'"
+            class="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition-all" :title="s.title">
             <span :class="pageDotColor(s.layout)" class="w-1.5 h-1.5 rounded-full shrink-0"></span>
             {{ i + 1 }}. {{ s.title?.slice(0, 8) }}{{ s.title?.length > 8 ? '…' : '' }}
           </button>
         </div>
       </div>
 
-      <!-- Narration Content -->
+      <!-- Narration Content — THE MAIN FOCUS -->
       <div class="flex-1 overflow-y-auto">
-        <div class="p-4 space-y-5">
-          <!-- Slide Info -->
+        <div class="p-5 space-y-5">
           <div>
-            <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wider">当前页面</span>
-            <h2 class="text-base font-semibold text-white mt-1.5 leading-snug">{{ currentSlide.title }}</h2>
-            <div class="flex items-center gap-2 mt-1">
-              <span :class="pageDotColor(currentSlide.layout)" class="w-2 h-2 rounded-full shrink-0"></span>
-              <span class="text-xs text-gray-600">{{ layoutLabel(currentSlide.layout) }} · {{ currentSlide.duration }}秒</span>
-            </div>
+            <span class="text-[10px] font-medium text-gray-600 uppercase tracking-wider">当前页面</span>
+            <h2 class="text-lg font-semibold text-white/90 mt-1.5 leading-snug">{{ currentSlide.title }}</h2>
           </div>
 
-          <!-- Narration -->
-          <div>
-            <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wider">旁白内容</span>
-            <p class="text-gray-300 leading-relaxed mt-1.5 text-sm whitespace-pre-wrap">{{ currentSlide.narration || '暂无旁白' }}</p>
+          <div class="bg-white/[0.02] rounded-xl p-4 border border-white/[0.04]">
+            <p class="text-gray-200 leading-relaxed text-[15px] whitespace-pre-wrap">{{ currentSlide.narration || '暂无旁白' }}</p>
           </div>
 
-          <!-- Keywords -->
           <div v-if="currentSlide.keywords?.length" class="flex flex-wrap gap-1.5">
-            <span v-for="(kw, i) in currentSlide.keywords" :key="i" class="px-2.5 py-1 bg-amber-400/10 text-amber-400/90 rounded-full text-xs font-medium">{{ kw }}</span>
+            <span v-for="(kw, i) in currentSlide.keywords" :key="i" class="px-2 py-0.5 bg-amber-400/8 text-amber-400/80 rounded-md text-[11px] font-medium">{{ kw }}</span>
           </div>
 
-          <!-- Tips -->
-          <div v-if="currentSlide.tips?.length" class="space-y-2 pt-3 border-t border-gray-800/50">
-            <div v-for="(tip, i) in currentSlide.tips" :key="i" class="text-xs text-blue-400/80 flex gap-2 items-start">
-              <span class="shrink-0 mt-0.5">💡</span>
+          <div v-if="currentSlide.tips?.length" class="space-y-1.5 pt-3 border-t border-gray-800/40">
+            <div v-for="(tip, i) in currentSlide.tips" :key="i" class="text-[11px] text-blue-400/70 flex gap-2 items-start">
+              <span class="shrink-0 mt-px">•</span>
               <span>{{ tip }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Controls -->
-      <div class="px-4 py-3 border-t border-gray-800/50 shrink-0">
-        <!-- Primary Nav -->
-        <div class="flex items-center gap-2 mb-2.5">
-          <button @click="prevSlide" :disabled="currentPage <= 0"
-            class="flex-1 py-2 rounded-xl text-sm font-medium bg-white/[0.06] text-gray-300 hover:bg-white/[0.12] disabled:opacity-20 disabled:hover:bg-white/[0.06] transition-all">
-            ← 上一页
-          </button>
-          <button @click="nextSlide" :disabled="currentPage >= slides.length - 1"
-            class="flex-1 py-2 rounded-xl text-sm font-medium bg-white/[0.06] text-gray-300 hover:bg-white/[0.12] disabled:opacity-20 disabled:hover:bg-white/[0.06] transition-all">
-            下一页 →
-          </button>
-        </div>
-        <!-- Secondary Controls -->
-        <div class="flex items-center gap-2">
-          <button @click="togglePause"
-            :class="isPaused ? 'bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/30' : 'bg-white/[0.06] text-gray-300 hover:bg-white/[0.12]'"
-            class="flex-[2] py-2 rounded-xl text-sm font-medium transition-all">
-            {{ isPaused ? '▶ 继续演讲' : '⏸ 暂停' }}
-          </button>
-          <button @click="resetTimer"
-            class="flex-1 py-2 rounded-xl text-xs font-medium bg-white/[0.03] text-gray-500 hover:bg-white/[0.08] hover:text-gray-400 transition-all">
-            ↺ 重置本页
-          </button>
-        </div>
-        <!-- Return to Editor -->
-        <div class="mt-2">
-          <button @click="goBack"
-            class="w-full py-2 rounded-xl text-xs font-medium bg-white/[0.03] text-gray-500 hover:bg-white/[0.08] hover:text-gray-400 transition-all">
-            ← 返回编辑器
-          </button>
-        </div>
+      <!-- Controls — subtle, compact, one row -->
+      <div class="px-5 py-3 border-t border-gray-800/30 shrink-0 flex items-center gap-1.5">
+        <button @click="prevSlide" :disabled="currentPage <= 0"
+          class="flex-1 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] disabled:opacity-20 disabled:hover:bg-transparent transition-all">
+          ← 上一页
+        </button>
+        <button @click="togglePause"
+          :class="isPaused ? 'bg-amber-400/8 text-amber-400/90' : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]'"
+          class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all">
+          {{ isPaused ? '▶' : '⏸' }}
+        </button>
+        <button @click="nextSlide" :disabled="currentPage >= slides.length - 1"
+          class="flex-1 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] disabled:opacity-20 disabled:hover:bg-transparent transition-all">
+          下一页 →
+        </button>
+        <button @click="resetTimer"
+          class="px-3 py-1.5 rounded-lg text-[11px] text-gray-600 hover:text-gray-400 hover:bg-white/[0.04] transition-all" title="重置计时">
+          ↺
+        </button>
       </div>
     </div>
 
