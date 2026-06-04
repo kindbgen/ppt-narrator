@@ -95,6 +95,10 @@ ipcMain.on('sync:broadcast', (event, { type, data }) => {
 ipcMain.on('window:open-presenter', () => createPresenterWindow())
 ipcMain.on('window:open-narrator', () => createNarratorWindow())
 ipcMain.on('window:close-narrator', () => { if (narratorWindow && !narratorWindow.isDestroyed()) narratorWindow.close() })
+ipcMain.on('window:close-self', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (win) { if (win.isFullScreen()) win.setFullScreen(false); win.close() }
+})
 
 ipcMain.handle('settings:get', () => ({
   aiProvider: process.env.VITE_AI_PROVIDER || '',

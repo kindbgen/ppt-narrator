@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openPresenterWindow() { ipcRenderer.send('window:open-presenter') },
   openNarratorWindow() { ipcRenderer.send('window:open-narrator') },
   closeNarratorWindow() { ipcRenderer.send('window:close-narrator') },
+  closeSelf() { ipcRenderer.send('window:close-self') },
   getSettings() { return ipcRenderer.invoke('settings:get') },
 })

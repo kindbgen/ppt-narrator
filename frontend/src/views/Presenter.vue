@@ -1,7 +1,32 @@
 <template>
   <div :class="themeClasses.bg" class="fixed inset-0 flex items-center justify-center p-12 transition-colors duration-500"
     @keydown.left.prevent="prevSlide" @keydown.right.prevent="nextSlide"
+    @keydown.esc.prevent="endPresentation"
+    @contextmenu.prevent="onContextMenu"
+    @click="ctxVisible = false"
     tabindex="0" ref="mainEl">
+
+    <!-- Context Menu -->
+    <Teleport to="body">
+      <div v-if="ctxVisible" :style="{ left: ctxX + 'px', top: ctxY + 'px' }"
+        class="fixed z-[9999] min-w-[140px] py-1.5 bg-gray-900/95 backdrop-blur-md border border-gray-700/60 rounded-xl shadow-2xl"
+        @click.stop>
+        <button @click="ctxPrev" :disabled="currentPage <= 0"
+          class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.06] disabled:opacity-25 flex items-center gap-2.5 transition-colors">
+          <span>←</span> 上一页
+        </button>
+        <button @click="ctxNext" :disabled="currentPage >= slides.length - 1"
+          class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.06] disabled:opacity-25 flex items-center gap-2.5 transition-colors">
+          <span>→</span> 下一页
+        </button>
+        <div class="my-1 border-t border-gray-700/40"></div>
+        <button @click="endPresentation"
+          class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-400/8 flex items-center gap-2.5 transition-colors">
+          <span>✕</span> 结束放映
+        </button>
+      </div>
+    </Teleport>
+
     <div class="w-full max-w-5xl text-center">
       <h2 v-if="currentSlide.layout !== 'cover' && currentSlide.layout !== 'section' && currentSlide.layout !== 'closing' && currentSlide.layout !== 'toc'" :class="themeClasses.title" class="text-5xl font-bold mb-8">{{ currentSlide.title }}</h2>
       <div :class="themeClasses.body" class="text-2xl leading-relaxed slide-body" v-html="currentSlide.content"></div>
@@ -11,9 +36,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSync } from '../utils/sync'
 
 const sync = useSync()
+const router = useRouter()
 const mainEl = ref(null)
 
 // --- State ---
@@ -21,6 +48,28 @@ const slides = ref([])
 const currentPage = ref(0)
 
 const currentSlide = computed(() => slides.value[currentPage.value] || {})
+
+// --- Context Menu ---
+const ctxVisible = ref(false)
+const ctxX = ref(0)
+const ctxY = ref(0)
+
+function onContextMenu(e) {
+  ctxX.value = Math.min(e.clientX, window.innerWidth - 160)
+  ctxY.value = Math.min(e.clientY, window.innerHeight - 200)
+  ctxVisible.value = true
+}
+
+function ctxPrev() { ctxVisible.value = false; prevSlide() }
+function ctxNext() { ctxVisible.value = false; nextSlide() }
+function endPresentation() {
+  ctxVisible.value = false
+  sync.broadcastPresentationEnd()
+  if (window.electronAPI) {
+    window.electronAPI.closeNarratorWindow()
+  }
+  router.push('/editor')
+}
 
 // --- Navigation ---
 function goToSlide(index) {

@@ -189,18 +189,21 @@ function togglePause() { isPaused.value = !isPaused.value; if (!isPaused.value) 
 function goToPage(i) { currentPage.value = i; resetTimer(); sync.broadcastPageChange(i, currentSlide.value.narration) }
 function nextSlide() { if (currentPage.value < slides.value.length - 1) { currentPage.value++; resetTimer(); sync.broadcastPageChange(currentPage.value, currentSlide.value.narration) } }
 function prevSlide() { if (currentPage.value > 0) { currentPage.value--; resetTimer(); sync.broadcastPageChange(currentPage.value, currentSlide.value.narration) } }
-function goBack() { stopTimer(); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd(); router.push('/editor') }
+function goBack() { stopTimer(); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd(); if (window.electronAPI) { window.electronAPI.closeNarratorWindow(); router.push('/editor') } else { window.close() } }
 
 onMounted(() => {
-  document.title = 'PPT演讲助手'
   localStorage.removeItem('ppt-presentation-start')
   elapsed.value = 0
 
   const saved = localStorage.getItem('ppt-slides')
   if (saved) try { slides.value = JSON.parse(saved) } catch {}
+  if (slides.value.length > 0) {
+    document.title = slides.value[0]?.title || 'PPT 演讲助手'
+  }
 
   sync.on('PRESENTATION_START', (data) => {
     slides.value = data.slides; currentPage.value = 0; elapsed.value = 0
+    document.title = data.slides[0]?.title || 'PPT 演讲助手'
     localStorage.setItem('ppt-presentation-start', Date.now())
     resetTimer()
   })

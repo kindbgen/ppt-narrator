@@ -32,7 +32,7 @@
           </span>
           <button @click="startPresentation" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 shadow-sm shadow-gray-900/10 transition-all active:scale-[0.98] disabled:opacity-30 disabled:pointer-events-none" :disabled="!!store.activeGenerations[store.currentProjectId]">
             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            开始演示
+            开始放映
           </button>
           <div class="relative">
             <button @click="showExport = !showExport" class="inline-flex items-center gap-1 px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
