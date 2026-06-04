@@ -99,6 +99,10 @@ ipcMain.on('window:close-self', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender)
   if (win) { if (win.isFullScreen()) win.setFullScreen(false); win.close() }
 })
+ipcMain.on('window:toggle-fullscreen', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (win) win.setFullScreen(!win.isFullScreen())
+})
 
 ipcMain.handle('settings:get', () => ({
   aiProvider: process.env.VITE_AI_PROVIDER || '',

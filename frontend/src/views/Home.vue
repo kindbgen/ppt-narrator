@@ -190,6 +190,7 @@ async function doGenerate(provider, settings) {
   const placeholderSlides = [{ layout: 'cover', title: '正在生成PPT...', duration: 15, content: '<div class="ppt-cover"><h1>正在生成PPT...</h1></div>', narration: '', keywords: [], tips: [] }]
   const tempId = await createProject({ slides: placeholderSlides, meta: { title: '正在生成PPT...', templateStyle: selStyle.value, aiProvider: provider, rawContent: rawContent.value } })
   store.currentProjectId = tempId; localStorage.setItem('ppt-active-project', tempId)
+  store.projectTitle = '正在生成PPT...'
   store.setSlides(placeholderSlides)
   store.setAIProvider(provider); store.setTemplateStyle(selStyle.value)
   shell.value?.load()

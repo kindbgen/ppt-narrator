@@ -11,6 +11,10 @@
       <div v-if="ctxVisible" :style="{ left: ctxX + 'px', top: ctxY + 'px' }"
         class="fixed z-[9999] min-w-[140px] py-1.5 bg-gray-900/95 backdrop-blur-md border border-gray-700/60 rounded-xl shadow-2xl"
         @click.stop>
+        <button @click="ctxFirst" :disabled="currentPage <= 0"
+          class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.06] disabled:opacity-25 flex items-center gap-2.5 transition-colors">
+          <span>⏮</span> 首页
+        </button>
         <button @click="ctxPrev" :disabled="currentPage <= 0"
           class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.06] disabled:opacity-25 flex items-center gap-2.5 transition-colors">
           <span>←</span> 上一页
@@ -19,7 +23,15 @@
           class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.06] disabled:opacity-25 flex items-center gap-2.5 transition-colors">
           <span>→</span> 下一页
         </button>
+        <button @click="ctxLast" :disabled="currentPage >= slides.length - 1"
+          class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.06] disabled:opacity-25 flex items-center gap-2.5 transition-colors">
+          <span>⏭</span> 最后一页
+        </button>
         <div class="my-1 border-t border-gray-700/40"></div>
+        <button @click="toggleFullscreen"
+          class="w-full px-4 py-2 text-left text-sm text-gray-400 hover:bg-white/[0.06] flex items-center gap-2.5 transition-colors">
+          <span>⛶</span> 退出全屏
+        </button>
         <button @click="endPresentation"
           class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-400/8 flex items-center gap-2.5 transition-colors">
           <span>✕</span> 结束放映
@@ -62,13 +74,27 @@ function onContextMenu(e) {
 
 function ctxPrev() { ctxVisible.value = false; prevSlide() }
 function ctxNext() { ctxVisible.value = false; nextSlide() }
+function ctxFirst() { ctxVisible.value = false; goToSlide(0) }
+function ctxLast() { ctxVisible.value = false; goToSlide(slides.value.length - 1) }
+function toggleFullscreen() {
+  ctxVisible.value = false
+  if (window.electronAPI) {
+    window.electronAPI.toggleFullscreen()
+  } else if (document.fullscreenElement) {
+    document.exitFullscreen()
+  } else {
+    document.documentElement.requestFullscreen()
+  }
+}
 function endPresentation() {
   ctxVisible.value = false
   sync.broadcastPresentationEnd()
   if (window.electronAPI) {
     window.electronAPI.closeNarratorWindow()
+    window.electronAPI.closeSelf()
+  } else {
+    router.push('/editor')
   }
-  router.push('/editor')
 }
 
 // --- Navigation ---
@@ -109,7 +135,6 @@ onMounted(() => {
 
   sync.on('PAGE_CHANGE', (data) => {
     currentPage.value = data.pageIndex
-    document.title = slides.value[data.pageIndex]?.title || 'PPT 演讲助手'
   })
 
   sync.on('PRESENTATION_START', (data) => {
