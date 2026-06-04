@@ -47,6 +47,7 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   unicode: true
+  guid: ppt-narrator
   artifactName: PPT演讲助手-${version}-setup.${ext}
   shortcutName: PPT演讲助手
 
