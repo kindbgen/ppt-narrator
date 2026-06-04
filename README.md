@@ -120,9 +120,9 @@ VITE_DOCMOST_TOKEN=your-wiki-token
 
 | 平台 | 路径 |
 |------|------|
-| macOS | `~/Library/Application Support/PPT演讲助手/settings.json` |
-| Windows | `%APPDATA%\PPT演讲助手\settings.json` |
-| Linux | `~/.config/PPT演讲助手/settings.json` |
+| macOS | `~/Library/Application Support/PPT-Narrator/settings.json` |
+| Windows | `%APPDATA%\PPT-Narrator\settings.json` |
+| Linux | `~/.config/PPT-Narrator/settings.json` |
 
 > `apiKey`、`claudeApiKey`、`openaiApiKey`、`ollamaEndpoint`、`mcpToken` 等敏感字段使用 Electron `safeStorage` API 加密存储，底层依赖 macOS Keychain / Windows DPAPI / Linux libsecret。
 
