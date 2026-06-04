@@ -36,9 +36,10 @@ dmg:
 win:
   executableName: ppt-narrator
   target:
-    - target: portable
+    - target: zip
       arch:
         - x64
+  artifactName: PPT演讲助手-${version}-win.${ext}
 
 # ===== Linux =====
 linux:
