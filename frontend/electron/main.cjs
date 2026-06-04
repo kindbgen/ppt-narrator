@@ -6,6 +6,9 @@ const { app, BrowserWindow, ipcMain, session, safeStorage } = require('electron'
 const path = require('node:path')
 const fs = require('node:fs')
 
+// Override app name (used for userData path) to Chinese
+app.setName('PPT演讲助手')
+
 // Settings file path
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json')
 

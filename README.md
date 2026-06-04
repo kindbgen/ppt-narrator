@@ -109,6 +109,23 @@ VITE_DOCMOST_TOKEN=your-wiki-token
 | 桌面打包 | Electron 42 + electron-builder |
 | Markdown | marked |
 
+## 数据存储
+
+| 数据类型 | 存储方式 | 加密 |
+|------|------|------|
+| PPT 项目数据 | SQLite（sql.js + IndexedDB） | 否（本地数据） |
+| AI 配置（API Key 等） | JSON 文件 | ✅ `safeStorage` 系统级加密 |
+
+**settings.json 路径**：
+
+| 平台 | 路径 |
+|------|------|
+| macOS | `~/Library/Application Support/PPT演讲助手/settings.json` |
+| Windows | `%APPDATA%\PPT演讲助手\settings.json` |
+| Linux | `~/.config/PPT演讲助手/settings.json` |
+
+> `apiKey`、`claudeApiKey`、`openaiApiKey`、`ollamaEndpoint`、`mcpToken` 等敏感字段使用 Electron `safeStorage` API 加密存储，底层依赖 macOS Keychain / Windows DPAPI / Linux libsecret。
+
 ## 项目结构
 
 ```
