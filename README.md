@@ -37,7 +37,10 @@ npm run electron:build:win     # Windows (.exe)
 npm run electron:build:linux   # Linux (.AppImage)
 ```
 
-> macOS 首次打开时若提示"无法验证开发者"，右键 → 打开 → 确认即可。
+> **macOS 注意事项**：
+> - 首次打开时若提示「无法验证开发者」，右键 → 打开 → 确认即可
+> - 若弹出「本地网络」权限请求，点击「允许」以保证本地 Ollama 等服务的正常连接
+> - 以上提示是由于 App 未经过 Apple 官方代码签名和公证（需要 $99/年的 Apple Developer 账号），不影响安全性
 
 ## 配置 AI 服务
 

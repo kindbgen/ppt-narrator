@@ -201,6 +201,17 @@ const cfg = ref({
   mcpToken: import.meta.env.VITE_DOCMOST_TOKEN || ''
 })
 
+async function loadSettings() {
+  if (window.electronAPI) {
+    try {
+      const saved = await window.electronAPI.getSettings()
+      if (saved && Object.keys(saved).length) {
+        cfg.value = { ...cfg.value, ...saved }
+      }
+    } catch {}
+  }
+}
+
 const hasAI = computed(() => {
   const c = cfg.value
   if (c.aiProvider === 'ollama') return true
@@ -229,12 +240,17 @@ async function load() { try { projects.value = await getProjectList() } catch {}
 
 async function saveSettings() {
   try {
-    const resp = await fetch('/api/save-env', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cfg.value)
-    })
-    if (!resp.ok) throw new Error('保存失败')
+    if (window.electronAPI) {
+      const result = await window.electronAPI.saveSettings(JSON.parse(JSON.stringify(cfg.value)))
+      if (result.error) throw new Error(result.error)
+    } else {
+      const resp = await fetch('/api/save-env', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cfg.value)
+      })
+      if (!resp.ok) throw new Error('保存失败')
+    }
     showSettings.value = false
   } catch (e) {
     alert('设置保存失败: ' + e.message)
@@ -256,7 +272,7 @@ async function openProject(id) {
 
 function goHome() { menuId.value = null; router.push('/'); emit('newProject') }
 function closeMenus() { menuId.value = null }
-onMounted(() => { load(); document.addEventListener('click', closeMenus); window.addEventListener('sidebar-refresh', load) })
+onMounted(() => { loadSettings(); load(); document.addEventListener('click', closeMenus); window.addEventListener('sidebar-refresh', load) })
 onUnmounted(() => { document.removeEventListener('click', closeMenus); window.removeEventListener('sidebar-refresh', load) })
 defineExpose({ load, hasAI, cfg })
 </script>

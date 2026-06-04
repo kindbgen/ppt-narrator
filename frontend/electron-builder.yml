@@ -1,7 +1,7 @@
 # Electron Builder Configuration
 # Cross-platform packaging for Windows, macOS, and Linux
 appId: com.pptnarrator.app
-productName: PPT Narrator
+productName: PPT演讲助手
 copyright: Copyright © 2025
 
 directories:
@@ -30,7 +30,7 @@ mac:
         - arm64
 
 dmg:
-  artifactName: ${name}-${version}-mac.${ext}
+  artifactName: PPT演讲助手-${version}-mac.${ext}
 
 # ===== Windows =====
 win:
@@ -46,8 +46,8 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: PPT Narrator
+  artifactName: PPT演讲助手-${version}-setup.${ext}
+  shortcutName: PPT演讲助手
 
 # ===== Linux =====
 linux:
@@ -58,7 +58,7 @@ linux:
   maintainer: ppt-narrator@example.com
 
 appImage:
-  artifactName: ${name}-${version}-linux.${ext}
+  artifactName: PPT演讲助手-${version}-linux.${ext}
 
 deb:
-  artifactName: ${name}-${version}-linux.${ext}
+  artifactName: PPT演讲助手-${version}-linux.${ext}

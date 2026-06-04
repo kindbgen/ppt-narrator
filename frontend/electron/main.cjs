@@ -2,8 +2,41 @@
  * Electron Main Process (CommonJS)
  * PPT Narrator — Desktop Application Entry Point
  */
-const { app, BrowserWindow, ipcMain, session } = require('electron')
+const { app, BrowserWindow, ipcMain, session, safeStorage } = require('electron')
 const path = require('node:path')
+const fs = require('node:fs')
+
+// Settings file path
+const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json')
+
+// Sensitive keys to encrypt
+const SENSITIVE_KEYS = ['apiKey', 'claudeApiKey', 'openaiApiKey', 'ollamaEndpoint', 'mcpToken']
+const CRYPT_PREFIX = '__enc__:'
+
+function loadSettings() {
+  try {
+    if (!fs.existsSync(SETTINGS_PATH)) return {}
+    const raw = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf-8'))
+    if (safeStorage.isEncryptionAvailable()) {
+      for (const k of SENSITIVE_KEYS) {
+        if (raw[k] && raw[k].startsWith(CRYPT_PREFIX)) {
+          try { raw[k] = safeStorage.decryptString(Buffer.from(raw[k].slice(CRYPT_PREFIX.length), 'base64')) } catch { delete raw[k] }
+        }
+      }
+    }
+    return raw
+  } catch { return {} }
+}
+
+function saveSettings(data) {
+  const toSave = { ...data }
+  if (safeStorage.isEncryptionAvailable()) {
+    for (const k of SENSITIVE_KEYS) {
+      if (toSave[k]) toSave[k] = CRYPT_PREFIX + safeStorage.encryptString(toSave[k]).toString('base64')
+    }
+  }
+  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(toSave, null, 2))
+}
 
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
 const DIST = path.join(__dirname, '..', 'dist')
@@ -15,7 +48,7 @@ let narratorWindow = null
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280, height: 860, minWidth: 960, minHeight: 640,
-    title: 'PPT 演讲助手',
+    title: 'PPT演讲助手',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false, contextIsolation: true, sandbox: true,
@@ -104,20 +137,10 @@ ipcMain.on('window:toggle-fullscreen', (event) => {
   if (win) win.setFullScreen(!win.isFullScreen())
 })
 
-ipcMain.handle('settings:get', () => ({
-  aiProvider: process.env.VITE_AI_PROVIDER || '',
-  gatewayBaseUrl: process.env.VITE_AI_GATEWAY_BASE_URL || '',
-  gatewayApiKey: process.env.VITE_AI_GATEWAY_API_KEY || '',
-  gatewayModel: process.env.VITE_AI_GATEWAY_MODEL || '',
-  claudeApiKey: process.env.VITE_CLAUDE_API_KEY || '',
-  claudeModel: process.env.VITE_CLAUDE_API_MODEL || '',
-  openaiApiKey: process.env.VITE_OPENAI_API_KEY || '',
-  openaiModel: process.env.VITE_OPENAI_API_MODEL || '',
-  ollamaEndpoint: process.env.VITE_OLLAMA_ENDPOINT || '',
-  ollamaModel: process.env.VITE_OLLAMA_MODEL || '',
-  mcpUrl: process.env.VITE_DOCMOST_MCP_URL || '',
-  mcpToken: process.env.VITE_DOCMOST_TOKEN || '',
-}))
+ipcMain.handle('settings:get', () => loadSettings())
+ipcMain.handle('settings:save', (_, data) => {
+  try { saveSettings(data); return { ok: true } } catch (e) { return { error: e.message } }
+})
 
 function setupCSP() {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {

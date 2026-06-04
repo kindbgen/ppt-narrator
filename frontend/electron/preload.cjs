@@ -16,4 +16,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeSelf() { ipcRenderer.send('window:close-self') },
   toggleFullscreen() { ipcRenderer.send('window:toggle-fullscreen') },
   getSettings() { return ipcRenderer.invoke('settings:get') },
+  saveSettings(data) { return ipcRenderer.invoke('settings:save', data) },
 })
