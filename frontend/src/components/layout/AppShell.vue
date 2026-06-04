@@ -111,18 +111,37 @@
         </template>
       </div>
 
-      <div class="border-t border-gray-100 px-4 py-2.5 flex items-center gap-2">
-        <button
-          @click="showSettings = true"
-          class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-all duration-200 shrink-0"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
-          <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">设置</span>
+      <div class="border-t border-gray-100/60 px-3 py-2.5 flex items-center gap-1.5">
+        <button @click="showSettings = true"
+          class="group relative flex items-center gap-2 flex-1 px-3 py-2 rounded-xl text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-100/70 transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <span class="text-xs font-medium">设置</span>
         </button>
-        <span class="text-sm font-semibold text-gray-500">设置</span>
-        <span v-if="!hasAI" class="w-1.5 h-1.5 rounded-full bg-orange-400 ml-auto" title="AI 未配置"></span>
+        <button @click="showAbout = true"
+          class="group relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-300 hover:text-gray-600 hover:bg-gray-100/70 transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span class="text-xs font-medium">关于</span>
+        </button>
+        <span v-if="!hasAI" class="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" title="AI 未配置"></span>
       </div>
     </aside>
+
+    <!-- About Modal -->
+    <Teleport to="body">
+      <div v-if="showAbout" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" @click.self="showAbout = false">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center" @click.stop>
+          <h2 class="text-lg font-bold mb-2">📽️ PPT 演讲助手</h2>
+          <p class="text-sm text-gray-500 mb-4">v1.0.0</p>
+          <div class="text-xs text-gray-400 space-y-1 mb-5">
+            <p>AI 驱动的演示文稿生成与双屏演讲工具</p>
+            <p>支持 Web · Windows · macOS · Linux</p>
+            <p class="mt-3 text-gray-300">Vue 3 · Vite 8 · Electron 42 · Tailwind CSS 4</p>
+            <p>Reveal.js 6 · SQLite · BroadcastChannel</p>
+          </div>
+          <button @click="showAbout = false" class="px-6 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800">关闭</button>
+        </div>
+      </div>
+    </Teleport>
 
     <main class="flex-1 overflow-auto"><slot /></main>
 
@@ -184,7 +203,7 @@ const router = useRouter()
 const store = usePPTStore()
 
 const projects = ref([]); const menuId = ref(null); const renaming = ref(null); const renameText = ref(''); const renameInput = ref(null)
-const showSettings = ref(false); const collapsed = ref(false)
+const showSettings = ref(false); const collapsed = ref(false); const showAbout = ref(false)
 
 const cfg = ref({
   aiProvider: import.meta.env.VITE_AI_PROVIDER || 'gateway',
