@@ -36,10 +36,20 @@ dmg:
 win:
   executableName: ppt-narrator
   target:
-    - target: zip
+    - target: nsis
       arch:
         - x64
-  artifactName: PPT演讲助手-${version}-win.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  unicode: true
+  guid: ppt-narrator
+  artifactName: PPT演讲助手-${version}-setup.${ext}
+  shortcutName: PPT演讲助手
 
 # ===== Linux =====
 linux:
