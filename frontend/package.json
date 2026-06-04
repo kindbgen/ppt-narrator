@@ -2,7 +2,7 @@
   "name": "PPT-Narrator",
   "private": true,
   "version": "1.0.0",
-  "description": "PPT Narrator - AI-powered presentation and dual-screen teleprompter",
+  "description": "AI驱动的演示文稿生成与双屏演讲工具，支持Web浏览器和Windows/macOS/Linux桌面应用",
   "author": "Kindbgen",
   "homepage": "https://github.com/ppt-narrator/ppt-narrator",
   "main": "dist-electron/main.js",
@@ -13,7 +13,7 @@
     "electron:dev": "vite",
     "electron:build": "vite build && electron-builder",
     "electron:build:win": "vite build && electron-builder --win",
-    "electron:build:mac": "vite build && electron-builder --mac && bash scripts/fix-mac-signing.sh release/mac-arm64/PPT\\ Narrator.app",
+    "electron:build:mac": "vite build && electron-builder --mac",
     "electron:build:linux": "vite build && electron-builder --linux"
   },
   "dependencies": {
