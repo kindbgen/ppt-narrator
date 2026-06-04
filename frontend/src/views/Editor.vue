@@ -453,6 +453,8 @@ function exportPPT(format) {
 </style></head><body>${buildSlideHTML()}</body></html>`
 
   if (format === 'pdf') {
+    const prevTitle = document.title
+    document.title = title
     const iframe = document.createElement('iframe')
     iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999'
     document.body.appendChild(iframe)
@@ -460,7 +462,7 @@ function exportPPT(format) {
     iframe.contentDocument.close()
     iframe.onload = () => setTimeout(() => {
       iframe.contentWindow.print()
-      setTimeout(() => document.body.removeChild(iframe), 500)
+      setTimeout(() => { document.body.removeChild(iframe); document.title = prevTitle }, 500)
     }, 300)
   } else if (format === 'html') {
     downloadBlob(html, `${title}.html`, 'text/html')
@@ -521,6 +523,8 @@ ${store.slides.map((s, i) => `<div class="page">
 </body></html>`
 
   if (format === 'pdf') {
+    const prevTitle = document.title
+    document.title = fileName
     const iframe = document.createElement('iframe')
     iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999'
     document.body.appendChild(iframe)
@@ -528,7 +532,7 @@ ${store.slides.map((s, i) => `<div class="page">
     iframe.contentDocument.close()
     iframe.onload = () => setTimeout(() => {
       iframe.contentWindow.print()
-      setTimeout(() => document.body.removeChild(iframe), 500)
+      setTimeout(() => { document.body.removeChild(iframe); document.title = prevTitle }, 500)
     }, 300)
   } else {
     downloadBlob(html, `${fileName}.html`, 'text/html')
