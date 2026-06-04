@@ -36,20 +36,9 @@ dmg:
 win:
   executableName: ppt-narrator
   target:
-    - target: nsis
+    - target: portable
       arch:
         - x64
-
-nsis:
-  oneClick: false
-  perMachine: false
-  allowToChangeInstallationDirectory: true
-  createDesktopShortcut: true
-  createStartMenuShortcut: true
-  unicode: true
-  guid: ppt-narrator
-  artifactName: PPT演讲助手-${version}-setup.${ext}
-  shortcutName: PPT演讲助手
 
 # ===== Linux =====
 linux:
