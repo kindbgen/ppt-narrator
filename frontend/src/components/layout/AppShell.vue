@@ -46,7 +46,7 @@
       </div>
 
       <div class="flex items-center justify-between px-4 py-2.5 shrink-0">
-        <span class="text-xs font-medium text-gray-400">历史项目</span>
+        <span class="text-sm font-semibold text-gray-500 flex items-center gap-1.5">📋 历史项目</span>
         <button
           @click="goHome"
           class="group relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-200/60 transition-all duration-200"
@@ -57,31 +57,58 @@
       </div>
       <div class="flex-1 overflow-y-auto">
         <p v-if="!projects.length" class="text-xs text-gray-400 text-center py-10 px-4">暂无项目，点击 + 新建</p>
-        <div class="px-2">
-          <div v-for="p in sortedProjects" :key="p.id" class="relative group">
-            <div
-              :class="['flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all mb-0.5', activeId === p.id ? 'bg-white shadow-sm ring-1 ring-gray-200/60 text-gray-900' : 'hover:bg-gray-200/50 text-gray-600']"
-              @click="openProject(p.id)"
-            >
-              <div class="flex-1 min-w-0">
-                <input v-if="renaming === p.id" v-model="renameText" ref="renameInput" @blur="doRename(p)" @keydown.enter="doRename(p)" @keydown.escape="renaming = null" @click.stop class="w-full text-sm bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-                <template v-else>
-                  <div class="text-sm truncate flex items-center gap-1.5">
-                    {{ p.title }}
-                    <span v-if="!!store.activeGenerations[p.id]" class="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" title="生成中"></span>
-                  </div>
-                  <div class="text-xs text-gray-400 mt-0.5">{{ fmtDate(p.updated_at) }}</div>
-                </template>
+
+        <!-- Recent 7 days -->
+        <template v-if="recentProjects.length">
+          <div class="px-4 py-1.5 shrink-0">
+            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">最近 7 天</span>
+          </div>
+          <div class="px-2">
+            <div v-for="p in recentProjects" :key="p.id" class="relative group">
+              <div :class="['flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all mb-0.5', activeId === p.id ? 'bg-white shadow-sm ring-1 ring-gray-200/60 text-gray-900' : 'hover:bg-gray-200/50 text-gray-600']" @click="openProject(p.id)">
+                <div class="flex-1 min-w-0">
+                  <input v-if="renaming === p.id" v-model="renameText" ref="renameInput" @blur="doRename(p)" @keydown.enter="doRename(p)" @keydown.escape="renaming = null" @click.stop class="w-full text-sm bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+                  <template v-else>
+                    <div class="text-sm truncate flex items-center gap-1.5">{{ p.title }}<span v-if="!!store.activeGenerations[p.id]" class="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" title="生成中"></span></div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">{{ fmtDate(p.updated_at) }}</div>
+                  </template>
+                </div>
+                <button @click.stop="menuId = menuId === p.id ? null : p.id" class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 transition-all text-sm">⋯</button>
               </div>
-              <button @click.stop="menuId = menuId === p.id ? null : p.id" class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 transition-all text-sm">⋯</button>
-            </div>
-            <div v-if="menuId === p.id" class="absolute left-2 right-2 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-md py-1 z-50">
-              <button @click="rename(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">✏️ 重命名</button>
-              <button @click="togglePin(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">{{ p.pinned ? '📌 取消置顶' : '📌 置顶' }}</button>
-              <button @click="del(p.id)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-red-500 transition-colors">🗑️ 删除</button>
+              <div v-if="menuId === p.id" class="absolute left-2 right-2 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-md py-1 z-50">
+                <button @click="rename(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">✏️ 重命名</button>
+                <button @click="togglePin(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">{{ p.pinned ? '📌 取消置顶' : '📌 置顶' }}</button>
+                <button @click="del(p.id)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-red-500 transition-colors">🗑️ 删除</button>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
+
+        <!-- Older projects (max 10) -->
+        <template v-if="showOlder.length">
+          <div class="px-4 py-1.5 shrink-0 mt-2">
+            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">更早项目</span>
+          </div>
+          <div class="px-2">
+            <div v-for="p in showOlder" :key="p.id" class="relative group">
+              <div :class="['flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all mb-0.5', activeId === p.id ? 'bg-white shadow-sm ring-1 ring-gray-200/60 text-gray-900' : 'hover:bg-gray-200/50 text-gray-600']" @click="openProject(p.id)">
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm truncate flex items-center gap-1.5">{{ p.title }}</div>
+                  <div class="text-[10px] text-gray-400 mt-0.5">{{ fmtDate(p.updated_at) }}</div>
+                </div>
+                <button @click.stop="menuId = menuId === p.id ? null : p.id" class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 transition-all text-sm">⋯</button>
+              </div>
+              <div v-if="menuId === p.id" class="absolute left-2 right-2 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-md py-1 z-50">
+                <button @click="rename(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">✏️ 重命名</button>
+                <button @click="togglePin(p)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors">{{ p.pinned ? '📌 取消置顶' : '📌 置顶' }}</button>
+                <button @click="del(p.id)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-red-500 transition-colors">🗑️ 删除</button>
+              </div>
+            </div>
+            <button v-if="olderCount > 10" @click="router.push('/all-projects')" class="w-full text-center py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              查看全部（{{ olderCount }} 个项目）→
+            </button>
+          </div>
+        </template>
       </div>
 
       <div class="border-t border-gray-100 px-4 py-2.5 flex items-center gap-2">
@@ -92,7 +119,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
           <span class="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-[100] shadow-md">设置</span>
         </button>
-        <span class="text-xs text-gray-400">设置</span>
+        <span class="text-sm font-semibold text-gray-500">设置</span>
         <span v-if="!hasAI" class="w-1.5 h-1.5 rounded-full bg-orange-400 ml-auto" title="AI 未配置"></span>
       </div>
     </aside>
@@ -186,6 +213,12 @@ const sortedProjects = computed(() => {
   list.sort((a, b) => { if (a.pinned && !b.pinned) return -1; if (!a.pinned && b.pinned) return 1; return new Date(b.updated_at) - new Date(a.updated_at) })
   return list
 })
+
+const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+const recentProjects = computed(() => sortedProjects.value.filter(p => new Date(p.updated_at) >= sevenDaysAgo))
+const olderProjects = computed(() => sortedProjects.value.filter(p => new Date(p.updated_at) < sevenDaysAgo))
+const showOlder = computed(() => olderProjects.value.slice(0, 10))
+const olderCount = computed(() => olderProjects.value.length)
 
 function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
 function togglePin(p) { updateProjectMeta(p.id, { pinned: p.pinned ? 0 : 1 }).then(load) }
