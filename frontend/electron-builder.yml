@@ -46,6 +46,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  unicode: true
   artifactName: PPT演讲助手-${version}-setup.${ext}
   shortcutName: PPT演讲助手
 
