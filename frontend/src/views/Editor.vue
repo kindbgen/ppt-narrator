@@ -288,7 +288,7 @@ let saveTimer = null
 let saving = false
 
 // Keep title in sync when generation updates store.projectTitle
-watch(() => store.projectTitle, (val) => { if (val) projectTitle.value = val })
+watch(() => store.projectTitle, (val) => { if (val) { projectTitle.value = val; document.title = val } })
 
 function onTitleEdit() { store.projectTitle = projectTitle.value; autoSave() }
 
@@ -348,7 +348,7 @@ async function doSave() {
   // Sync sidebar
   shellRef.value?.load()
   saveStatus.text = '已保存'; saveStatus.class = 'text-green-500'; saveStatus.dot = 'bg-green-400'
-  document.title = (projectTitle.value || 'PPT 演讲助手编辑器') + ' — 编辑器'
+  document.title = projectTitle.value || 'PPT 演讲助手'
   setTimeout(() => { if (saveStatus.text === '已保存') saveStatus.text = '' }, 2000)
   } finally { saving = false }
 }
@@ -472,7 +472,7 @@ function exportPPT(format) {
 
 function exportNarration(format) {
   showExport.value = false
-  const fileName = (projectTitle.value || 'PPT演示文稿') + '_旁白'
+  const fileName = (projectTitle.value || 'PPT演示文稿') + '-旁白'
   const { bg, textColor, titleColor } = getThemeCSS()
   const meta = [speaker.value, department.value, eventType.value, startTime.value].filter(Boolean)
 
@@ -565,7 +565,7 @@ async function restoreFromDB() {
       localStorage.setItem('ppt-theme', p.template_style || 'business')
       projectTitle.value = store.projectTitle; speaker.value = store.speaker; department.value = store.department
       eventType.value = store.eventType; startTime.value = store.startTime
-      document.title = (store.projectTitle || '编辑器') + ' — 编辑器'
+      document.title = store.projectTitle || 'PPT 演讲助手'
       currentTheme.value = themes.find(t => t.value === store.config.templateStyle) || themes[0]
       nextTick(syncContent)
     } else if (!store.slides.length) { router.replace('/') }
