@@ -1,13 +1,12 @@
 /**
- * Changelog auto-update script (triggered by npm `version` lifecycle hook)
- *
- * When `npm version <patch|minor|major>` runs, this script:
- *   1. Replaces `## [Unreleased]` with `## [<new-version>] - <today>`
- *   2. Prepends a fresh `## [Unreleased]` block
- *   3. Updates the version-link footer
- *   4. Stages CHANGELOG.md so it's included in npm's version commit
+ * Release script — bumps version, updates CHANGELOG.md, commits + tags.
  *
  * Usage:
+ *   node scripts/release.mjs patch
+ *   node scripts/release.mjs minor
+ *   node scripts/release.mjs major
+ *
+ * Also available via npm scripts:
  *   npm run release:patch
  *   npm run release:minor
  *   npm run release:major
@@ -20,6 +19,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '../../') // repo root
+const pkgPath = path.join(rootDir, 'frontend', 'package.json')
 const changelogPath = path.join(rootDir, 'CHANGELOG.md')
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -34,14 +34,38 @@ function git(cmd) {
   }
 }
 
+function bumpVersion(current, type) {
+  const parts = current.split('.').map(Number)
+  if (type === 'major') return `${parts[0] + 1}.0.0`
+  if (type === 'minor') return `${parts[0]}.${parts[1] + 1}.0`
+  return `${parts[0]}.${parts[1]}.${parts[2] + 1}` // patch
+}
+
 // ── main ─────────────────────────────────────────────────────────────
 
-const newVersion = process.env.npm_package_version
-if (!newVersion) {
-  console.error('❌ npm_package_version not set – run via `npm version`.')
+const bumpType = process.argv[2]
+if (!['patch', 'minor', 'major'].includes(bumpType)) {
+  console.error('Usage: node scripts/release.mjs <patch|minor|major>')
   process.exit(1)
 }
 
+// 0. Ensure clean working tree
+const status = git('git status --porcelain')
+if (status) {
+  console.error('❌ Working tree is not clean. Please commit or stash changes first.')
+  console.error(status)
+  process.exit(1)
+}
+
+// 1. Bump version in package.json
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+const oldVersion = pkg.version
+const newVersion = bumpVersion(oldVersion, bumpType)
+pkg.version = newVersion
+fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8')
+console.log(`📦 package.json: ${oldVersion} → ${newVersion}`)
+
+// 2. Update CHANGELOG.md
 let content = fs.readFileSync(changelogPath, 'utf8')
 
 if (!content.includes('## [Unreleased]')) {
@@ -49,11 +73,10 @@ if (!content.includes('## [Unreleased]')) {
   process.exit(1)
 }
 
-// 1. Turn [Unreleased] into dated version header
+// Turn [Unreleased] into dated version header
 content = content.replace('## [Unreleased]', `## [${newVersion}] - ${today()}`)
 
-// 2. Insert fresh Unreleased block BETWEEN intro text and first version heading
-//    Intro = everything before the first `## [` heading
+// Insert fresh Unreleased block before the first version heading
 const unreleasedBlock = [
   '## [Unreleased]',
   '',
@@ -73,37 +96,33 @@ const unreleasedBlock = [
   '',
 ].join('\n')
 
-// Find the first `## [x.y.z]` heading (the version we just dated)
 const firstHeadingRegex = /^## \[[\d.]+\]/m
 const match = firstHeadingRegex.exec(content)
 if (!match) {
   console.error('❌ Could not locate version heading in CHANGELOG.md.')
   process.exit(1)
 }
+content = content.slice(0, match.index) + unreleasedBlock + content.slice(match.index)
 
-// Insert unreleased block before that heading
-const insertAt = match.index
-content = content.slice(0, insertAt) + unreleasedBlock + content.slice(insertAt)
-
-// 3. Update version links
+// Update version links
 const repoUrl = 'https://github.com/kindbgen/ppt-narrator'
-
-// Replace old [Unreleased] link → comparison from new version to HEAD
 content = content.replace(
   /^\[Unreleased\]:.*$/m,
   `[Unreleased]: ${repoUrl}/compare/v${newVersion}...HEAD`
 )
-
-// Insert new version link before the first existing version link
 content = content.replace(
   /^\[(\d+\.\d+\.\d+)\]:/m,
   `[${newVersion}]: ${repoUrl}/releases/tag/v${newVersion}\n[$1]:`
 )
 
-// 4. Write back
 fs.writeFileSync(changelogPath, content, 'utf8')
-console.log(`✅ CHANGELOG.md updated for v${newVersion}`)
+console.log(`📝 CHANGELOG.md updated for v${newVersion}`)
 
-// 5. Stage for the npm version commit
-execSync(`git add "${changelogPath}"`, { cwd: rootDir })
-console.log('✅ CHANGELOG.md staged for version commit')
+// 3. Git commit + tag
+execSync('git add frontend/package.json CHANGELOG.md', { cwd: rootDir })
+execSync(`git commit -m "chore: release v${newVersion}"`, { cwd: rootDir })
+execSync(`git tag -a v${newVersion} -m "v${newVersion}"`, { cwd: rootDir })
+console.log(`🏷️  Git commit + tag v${newVersion} created`)
+console.log('')
+console.log('Next steps:')
+console.log(`  git push --follow-tags origin main`)
