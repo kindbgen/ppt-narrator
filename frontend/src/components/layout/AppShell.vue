@@ -250,16 +250,12 @@ async function testAI() {
     } else if (c.aiProvider === 'ollama') {
       url = `${c.ollamaEndpoint}/api/tags`
     }
-    const result = await fetch('/api/test-connectivity', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, method, headers, body })
-    }).then(r => r.json())
-    if (result.ok) {
+    const resp = await proxyFetch(url, method, headers, body)
+    if (resp.ok) {
       testResults.value.ai = 'ok'
     } else {
       testResults.value.ai = 'fail'
-      testResults.value.aiMsg = errMsg(result.status, result.body)
+      testResults.value.aiMsg = errMsg(resp.status, resp.body)
     }
   } catch (e) {
     testResults.value.ai = 'fail'
@@ -275,21 +271,13 @@ async function testWiki() {
   testResults.value.wikiMsg = ''
   try {
     const headers = cfg.value.mcpToken ? { Authorization: `Bearer ${cfg.value.mcpToken}` } : {}
-    const result = await fetch('/api/test-connectivity', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: cfg.value.mcpUrl,
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 1 })
-      })
-    }).then(r => r.json())
-    if (result.ok) {
+    const resp = await proxyFetch(cfg.value.mcpUrl, 'POST', headers,
+      JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 1 }))
+    if (resp.ok) {
       testResults.value.wiki = 'ok'
     } else {
       testResults.value.wiki = 'fail'
-      testResults.value.wikiMsg = errMsg(result.status, result.body)
+      testResults.value.wikiMsg = errMsg(resp.status, resp.body)
     }
   } catch (e) {
     testResults.value.wiki = 'fail'
@@ -297,6 +285,22 @@ async function testWiki() {
   } finally {
     testing.value.wiki = false
   }
+}
+
+// Electron has no CORS, direct fetch works. Browser dev mode uses Vite proxy.
+async function proxyFetch(url, method, headers, body) {
+  if (window.electronAPI) {
+    const opts = { method, headers: { 'Content-Type': 'application/json', ...headers } }
+    if (body && method !== 'GET') opts.body = typeof body === 'string' ? body : JSON.stringify(body)
+    const r = await fetch(url, opts)
+    const text = await r.text().catch(() => '')
+    return { status: r.status, ok: r.ok, body: text.slice(0, 500) }
+  }
+  return fetch('/api/test-connectivity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, method, headers, body })
+  }).then(r => r.json())
 }
 
 function errMsg(status, body) {
