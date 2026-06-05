@@ -152,14 +152,14 @@
           <div class="flex items-center justify-between mb-5"><h2 class="text-lg font-bold">⚙️ 设置</h2><button @click="showSettings = false" class="text-gray-400 hover:text-gray-600 text-xl">✕</button></div>
 
           <h3 class="text-sm font-medium text-gray-500 mb-3">AI 服务</h3>
-          <div class="space-y-3 mb-6">
+          <div class="space-y-3 mb-3">
             <select v-model="cfg.aiProvider" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none">
               <option value="gateway">LLM Gateway</option><option value="claude">Claude官方API</option><option value="openai">OpenAI官方API</option><option value="ollama">Ollama 本地</option>
             </select>
             <template v-if="cfg.aiProvider === 'gateway'">
               <input v-model="cfg.baseUrl" placeholder="Base URL（必填）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
               <input v-model="cfg.apiKey" type="password" placeholder="API Key（必填）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-              <input v-model="cfg.model" placeholder="Model name" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+              <input v-model="cfg.model" placeholder="Model name（必填，如 deepseek-v4-pro）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
             </template>
             <template v-if="cfg.aiProvider === 'claude'">
               <input v-model="cfg.claudeApiKey" type="password" placeholder="Claude API Key（必填）" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
@@ -174,11 +174,31 @@
               <input v-model="cfg.ollamaModel" placeholder="Model" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
             </template>
           </div>
+          <!-- AI 连通性测试 -->
+          <div class="mb-4">
+            <button @click="testAI" :disabled="testing.ai"
+              class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              <span v-if="testing.ai" class="inline-block w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mr-1.5 align-middle"></span>
+              {{ testing.ai ? '测试中...' : '🔗 连通性测试' }}
+            </button>
+            <span v-if="testResults.ai === 'ok'" class="ml-2 text-xs text-green-600">✅ 连接成功</span>
+            <span v-if="testResults.ai === 'fail'" class="ml-2 text-xs text-red-500">❌ {{ testResults.aiMsg }}</span>
+          </div>
 
           <h3 class="text-sm font-medium text-gray-500 mb-3">Wiki MCP</h3>
-          <div class="space-y-3 mb-6">
+          <div class="space-y-3 mb-3">
             <input v-model="cfg.mcpUrl" placeholder="MCP URL" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
             <input v-model="cfg.mcpToken" type="password" placeholder="MCP Token" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+          </div>
+          <!-- Wiki MCP 连通性测试 -->
+          <div class="mb-6">
+            <button @click="testWiki" :disabled="testing.wiki"
+              class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              <span v-if="testing.wiki" class="inline-block w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mr-1.5 align-middle"></span>
+              {{ testing.wiki ? '测试中...' : '🔗 连通性测试' }}
+            </button>
+            <span v-if="testResults.wiki === 'ok'" class="ml-2 text-xs text-green-600">✅ 连接成功</span>
+            <span v-if="testResults.wiki === 'fail'" class="ml-2 text-xs text-red-500">❌ {{ testResults.wikiMsg }}</span>
           </div>
 
           <div class="flex gap-3">
@@ -205,6 +225,86 @@ const store = usePPTStore()
 const projects = ref([]); const menuId = ref(null); const renaming = ref(null); const renameText = ref(''); const renameInput = ref(null)
 const showSettings = ref(false); const collapsed = ref(false); const showAbout = ref(false)
 const appVersion = __APP_VERSION__
+
+const testing = ref({ ai: false, wiki: false })
+const testResults = ref({ ai: null, aiMsg: '', wiki: null, wikiMsg: '' })
+
+async function testAI() {
+  testing.value.ai = true
+  testResults.value.ai = null
+  testResults.value.aiMsg = ''
+  const c = cfg.value
+  try {
+    let url, method = 'GET', headers = {}, body = null
+    if (c.aiProvider === 'gateway') {
+      url = `${c.baseUrl}/models`
+      if (c.apiKey) headers.Authorization = `Bearer ${c.apiKey}`
+    } else if (c.aiProvider === 'claude') {
+      url = 'https://api.anthropic.com/v1/messages'
+      method = 'POST'
+      headers = { 'x-api-key': c.claudeApiKey, 'anthropic-version': '2024-02-15' }
+      body = JSON.stringify({ model: c.claudeModel || 'claude-opus-4-8', max_tokens: 1, messages: [{ role: 'user', content: 'Hi' }] })
+    } else if (c.aiProvider === 'openai') {
+      url = 'https://api.openai.com/v1/models'
+      if (c.openaiApiKey) headers.Authorization = `Bearer ${c.openaiApiKey}`
+    } else if (c.aiProvider === 'ollama') {
+      url = `${c.ollamaEndpoint}/api/tags`
+    }
+    const result = await fetch('/api/test-connectivity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, method, headers, body })
+    }).then(r => r.json())
+    if (result.ok) {
+      testResults.value.ai = 'ok'
+    } else {
+      testResults.value.ai = 'fail'
+      testResults.value.aiMsg = errMsg(result.status, result.body)
+    }
+  } catch (e) {
+    testResults.value.ai = 'fail'
+    testResults.value.aiMsg = '网络请求失败，请检查网络连接或服务地址'
+  } finally {
+    testing.value.ai = false
+  }
+}
+
+async function testWiki() {
+  testing.value.wiki = true
+  testResults.value.wiki = null
+  testResults.value.wikiMsg = ''
+  try {
+    const headers = cfg.value.mcpToken ? { Authorization: `Bearer ${cfg.value.mcpToken}` } : {}
+    const result = await fetch('/api/test-connectivity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: cfg.value.mcpUrl,
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 1 })
+      })
+    }).then(r => r.json())
+    if (result.ok) {
+      testResults.value.wiki = 'ok'
+    } else {
+      testResults.value.wiki = 'fail'
+      testResults.value.wikiMsg = errMsg(result.status, result.body)
+    }
+  } catch (e) {
+    testResults.value.wiki = 'fail'
+    testResults.value.wikiMsg = '网络请求失败，请检查网络连接或服务地址'
+  } finally {
+    testing.value.wiki = false
+  }
+}
+
+function errMsg(status, body) {
+  const msgs = { 400: '请求参数错误', 401: '认证失败，请检查 API Key 或 Token', 403: '访问被拒绝，请检查权限配置', 404: '接口不存在，请检查服务地址', 502: '代理请求失败，请检查网络可达性', 503: '服务暂时不可用' }
+  if (msgs[status]) return msgs[status]
+  if (status >= 500) return '服务器内部错误 (HTTP ' + status + ')'
+  return `HTTP ${status}: ${(body || '').slice(0, 60)}`
+}
 
 const cfg = ref({
   aiProvider: import.meta.env.VITE_AI_PROVIDER || 'gateway',

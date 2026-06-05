@@ -62,8 +62,37 @@ function saveEnvPlugin() {
   }
 }
 
+function connectivityTestPlugin() {
+  return {
+    name: 'connectivity-test',
+    configureServer(server) {
+      server.middlewares.use('/api/test-connectivity', async (req, res) => {
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(); return }
+        let body = ''
+        req.on('data', c => body += c)
+        req.on('end', async () => {
+          try {
+            const { url, method = 'GET', headers = {}, body: reqBody } = JSON.parse(body)
+            const fetchOptions = { method, headers: { 'Content-Type': 'application/json', ...headers } }
+            if (reqBody && method !== 'GET') fetchOptions.body = typeof reqBody === 'string' ? reqBody : JSON.stringify(reqBody)
+            const upstream = await fetch(url, fetchOptions)
+            const text = await upstream.text()
+            res.statusCode = upstream.status
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ status: upstream.status, ok: upstream.ok, body: text.slice(0, 500) }))
+          } catch (e) {
+            res.statusCode = 502
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ status: 502, ok: false, body: e.message }))
+          }
+        })
+      })
+    }
+  }
+}
+
 async function getPlugins() {
-  const plugins = [vue(), tailwindcss(), saveEnvPlugin()]
+  const plugins = [vue(), tailwindcss(), saveEnvPlugin(), connectivityTestPlugin()]
   if (isBuild) {
     const electron = (await import('vite-plugin-electron/simple')).default
     plugins.push(electron({
