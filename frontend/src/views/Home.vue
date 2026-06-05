@@ -9,7 +9,7 @@
       <!-- Hero -->
       <div class="text-center mb-10">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">AI 智能生成 PPT 和旁白</h1>
-        <p class="text-gray-400">输入文档内容，AI 自动分析结构、生成精美 PPT 和演讲旁白</p>
+        <p class="text-gray-400">输入你想创作的PPT主题，AI 自动分析结构、生成精美 PPT 和演讲旁白</p>
       </div>
 
       <!-- Main Textarea -->
@@ -18,7 +18,7 @@
           v-model="rawContent"
           v-if="method !== 'upload'"
           rows="9"
-          :placeholder="method === 'docmost' ? '点击下方「获取文档」导入 Wiki 内容...' : '输入文档内容，例如项目汇报、技术分享、产品介绍...'"
+          :placeholder="method === 'docmost' ? '点击下方「获取文档」导入 Wiki 内容...' : '输入你想创作的PPT主题，例如项目汇报、技术分享、产品介绍...'"
           class="w-full px-6 py-5 text-base border border-gray-200 rounded-2xl focus:ring-2 focus:ring-gray-300 focus:outline-none resize-none shadow-sm"
         ></textarea>
 
