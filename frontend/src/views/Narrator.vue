@@ -189,7 +189,7 @@ function togglePause() { isPaused.value = !isPaused.value; if (!isPaused.value) 
 function goToPage(i) { currentPage.value = i; resetTimer(); sync.broadcastPageChange(i, currentSlide.value.narration) }
 function nextSlide() { if (currentPage.value < slides.value.length - 1) { currentPage.value++; resetTimer(); sync.broadcastPageChange(currentPage.value, currentSlide.value.narration) } }
 function prevSlide() { if (currentPage.value > 0) { currentPage.value--; resetTimer(); sync.broadcastPageChange(currentPage.value, currentSlide.value.narration) } }
-function goBack() { stopTimer(); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd(); if (window.electronAPI) { window.electronAPI.closeNarratorWindow(); router.push('/editor') } else { window.close() } }
+function goBack() { stopTimer(); localStorage.removeItem('ppt-presentation-start'); sync.broadcastPresentationEnd(); if (window.electronAPI) { window.electronAPI.closeNarratorWindow(); router.push('/editor') } else if (window.opener) { window.close() } else { router.push('/editor') } }
 
 onMounted(() => {
   localStorage.removeItem('ppt-presentation-start')

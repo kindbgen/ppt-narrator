@@ -30,6 +30,20 @@
               ? '🤖 AI 正在分析内容生成 PPT...'
               : `🤖 生成旁白 ${store.activeGenerations[store.currentProjectId]?.current || 0}/${store.activeGenerations[store.currentProjectId]?.total || 0}` }}
           </span>
+          <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-0.5">
+            <button
+              @click="isRecordingMode = false; localStorage.setItem('ppt-recording-mode', 'false')"
+              :class="!isRecordingMode ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+              title="双屏模式"
+            >📺</button>
+            <button
+              @click="isRecordingMode = true; localStorage.setItem('ppt-recording-mode', 'true')"
+              :class="isRecordingMode ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+              title="录制模式"
+            >🎬</button>
+          </div>
           <button @click="startPresentation" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 shadow-sm shadow-gray-900/10 transition-all active:scale-[0.98] disabled:opacity-30 disabled:pointer-events-none" :disabled="!!store.activeGenerations[store.currentProjectId]">
             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             开始放映
@@ -219,6 +233,7 @@ const themes = [
 const currentTheme = ref(themes[0])
 const showMeta = ref(true)
 const showExport = ref(false)
+const isRecordingMode = ref(localStorage.getItem('ppt-recording-mode') === 'true')
 
 // ---- Current slide computed ----
 const currentSlide = computed(() => {
@@ -548,8 +563,11 @@ function startPresentation() {
       // Electron: open both Presenter and Narrator as native windows
       window.electronAPI.openPresenterWindow()
       window.electronAPI.openNarratorWindow()
+    } else if (isRecordingMode.value) {
+      // 录制模式：单窗口，直接导航到 Narrator（旁白+PPT预览同屏）
+      router.push('/narrator')
     } else {
-      // Browser: open popup + navigate
+      // 双屏模式：弹出 Narrator 窗口 + 当前页切换到 Presenter
       const w = 1200; const h = 780
       window.open('/#/narrator', 'narrator', `width=${w},height=${h},left=${Math.round((screen.width - w) / 2)},top=${Math.round((screen.height - h) / 2)}`)
       router.push('/presenter')
