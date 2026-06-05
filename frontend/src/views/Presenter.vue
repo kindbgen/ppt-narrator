@@ -67,13 +67,18 @@ const ctxX = ref(0)
 const ctxY = ref(0)
 const isFullscreen = ref(false)
 
-function updateFullscreenState() {
-  isFullscreen.value = !!(document.fullscreenElement || (window.electronAPI && window.electronAPI.isFullscreen?.()))
+async function updateFullscreenState() {
+  if (window.electronAPI) {
+    isFullscreen.value = await window.electronAPI.isFullscreen()
+  } else {
+    isFullscreen.value = !!document.fullscreenElement
+  }
 }
 
-function onContextMenu(e) {
+async function onContextMenu(e) {
   ctxX.value = Math.min(e.clientX, window.innerWidth - 160)
   ctxY.value = Math.min(e.clientY, window.innerHeight - 200)
+  await updateFullscreenState()
   ctxVisible.value = true
 }
 
@@ -81,10 +86,12 @@ function ctxPrev() { ctxVisible.value = false; prevSlide() }
 function ctxNext() { ctxVisible.value = false; nextSlide() }
 function ctxFirst() { ctxVisible.value = false; goToSlide(0) }
 function ctxLast() { ctxVisible.value = false; goToSlide(slides.value.length - 1) }
-function toggleFullscreen() {
+async function toggleFullscreen() {
   ctxVisible.value = false
   if (window.electronAPI) {
     window.electronAPI.toggleFullscreen()
+    // Wait a tick for Electron to apply fullscreen state, then update
+    setTimeout(async () => { await updateFullscreenState() }, 200)
   } else if (document.fullscreenElement) {
     document.exitFullscreen()
   } else {

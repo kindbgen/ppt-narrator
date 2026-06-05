@@ -140,6 +140,10 @@ ipcMain.on('window:toggle-fullscreen', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender)
   if (win) win.setFullScreen(!win.isFullScreen())
 })
+ipcMain.handle('window:is-fullscreen', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  return win ? win.isFullScreen() : false
+})
 
 ipcMain.handle('settings:get', () => loadSettings())
 ipcMain.handle('settings:save', (_, data) => {
