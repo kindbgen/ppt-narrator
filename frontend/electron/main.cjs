@@ -65,17 +65,14 @@ function createMainWindow() {
 function createPresenterWindow() {
   if (presenterWindow && !presenterWindow.isDestroyed()) { presenterWindow.focus(); return }
   presenterWindow = new BrowserWindow({
-    show: false, title: 'PPT 演示屏',
+    title: 'PPT 演示屏',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false, contextIsolation: true, sandbox: true,
     },
   })
+  presenterWindow.maximize()
   loadWindow(presenterWindow, '/#/presenter')
-  presenterWindow.once('ready-to-show', () => {
-    presenterWindow.maximize()
-    presenterWindow.show()
-  })
   presenterWindow.on('closed', () => {
     presenterWindow = null
     if (narratorWindow && !narratorWindow.isDestroyed()) {
