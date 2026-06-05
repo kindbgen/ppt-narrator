@@ -85,11 +85,8 @@ jobs:
         working-directory: frontend
 
       - name: Build Electron app
-        run: npm run electron:build
+        run: npm run build && npx electron-builder --publish never
         working-directory: frontend
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_BUILDER_PUBLISH: never
 
       # ── Sanity check ──
       - name: Show built artifacts
