@@ -49,11 +49,12 @@ if (!['patch', 'minor', 'major'].includes(bumpType)) {
   process.exit(1)
 }
 
-// 0. Ensure clean working tree
-const status = git('git status --porcelain')
-if (status) {
-  console.error('❌ Working tree is not clean. Please commit or stash changes first.')
-  console.error(status)
+// 0. Ensure files we touch are not already modified
+const dirtyFiles = git('git diff --name-only -- frontend/package.json CHANGELOG.md')
+if (dirtyFiles) {
+  console.error('❌ The following files have uncommitted changes:')
+  console.error(dirtyFiles)
+  console.error('Please commit or stash them first.')
   process.exit(1)
 }
 
