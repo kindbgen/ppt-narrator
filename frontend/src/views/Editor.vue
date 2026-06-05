@@ -560,9 +560,14 @@ function startPresentation() {
   doSave().finally(() => {
     localStorage.setItem('ppt-slides', JSON.stringify(store.slides))
     if (window.electronAPI) {
-      // Electron: open both Presenter and Narrator as native windows
-      window.electronAPI.openPresenterWindow()
-      window.electronAPI.openNarratorWindow()
+      if (isRecordingMode.value) {
+        // 录制模式：只打开 Narrator 窗口（旁白+PPT预览同屏），Presenter 按需手动打开
+        window.electronAPI.openNarratorWindow()
+      } else {
+        // 双屏模式：同时打开 Presenter 和 Narrator 窗口
+        window.electronAPI.openPresenterWindow()
+        window.electronAPI.openNarratorWindow()
+      }
     } else if (isRecordingMode.value) {
       // 录制模式：单窗口，直接导航到 Narrator（旁白+PPT预览同屏）
       router.push('/narrator')
