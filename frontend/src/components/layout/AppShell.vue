@@ -131,7 +131,7 @@
       <div v-if="showAbout" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" @click.self="showAbout = false">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center" @click.stop>
           <h2 class="text-lg font-bold mb-2">📽️ PPT 演讲助手</h2>
-          <p class="text-sm text-gray-500 mb-4">v1.0.0</p>
+          <p class="text-sm text-gray-500 mb-4">v{{ appVersion }}</p>
           <div class="text-xs text-gray-400 space-y-1 mb-5">
             <p>AI 驱动的演示文稿生成与双屏演讲工具</p>
             <p>支持 Web · Windows · macOS · Linux</p>
@@ -204,6 +204,7 @@ const store = usePPTStore()
 
 const projects = ref([]); const menuId = ref(null); const renaming = ref(null); const renameText = ref(''); const renameInput = ref(null)
 const showSettings = ref(false); const collapsed = ref(false); const showAbout = ref(false)
+const appVersion = __APP_VERSION__
 
 const cfg = ref({
   aiProvider: import.meta.env.VITE_AI_PROVIDER || 'gateway',

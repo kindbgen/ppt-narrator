@@ -6,6 +6,10 @@ import fs from 'node:fs'
 const isBuild = process.argv.includes('build')
 import path from 'node:path'
 
+// Read version from package.json for injection into the app
+const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf-8'))
+const APP_VERSION = pkg.version
+
 function saveEnvPlugin() {
   return {
     name: 'save-env',
@@ -78,6 +82,9 @@ export default defineConfig(async ({ mode }) => {
 
   return {
     base: './',
+    define: {
+      __APP_VERSION__: JSON.stringify(APP_VERSION),
+    },
     plugins: await getPlugins(),
     server: {
       proxy: {
