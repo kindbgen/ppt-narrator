@@ -1,0 +1,142 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ── Changelog gate (PR only) ──
+  # Ensures CHANGELOG.md is touched in every PR unless labelled skip-changelog.
+  changelog:
+    name: Changelog
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check CHANGELOG was updated
+        uses: dangoslen/changelog-enforcer@v3
+        with:
+          changeLogPath: CHANGELOG.md
+          skipLabels: skip-changelog
+          missingUpdateErrorMessage: |
+            ⚠️  CHANGELOG.md 未更新！请在 `## [Unreleased]` 下添加变更说明。
+            如果本次 PR 不需要更新 changelog，请添加 `skip-changelog` 标签。
+
+  # ── Platform builds ──
+  build:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      # Disable code-signing on every platform (no certs in CI)
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # ── Electron / electron-builder binary cache ──
+      # ~  resolves to  /home/runner  (Linux)
+      #                 /Users/runner  (macOS)
+      #                 C:\Users\runneradmin  (Windows)
+      - name: Restore electron cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-cache-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            electron-cache-${{ runner.os }}-
+
+      # ── Linux: system deps for AppImage (.deb) ──
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libfuse2 ruby ruby-dev
+          sudo gem install fpm --no-document
+
+      # ── Install & Build ──
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build Electron app
+        run: npm run electron:build
+        working-directory: frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Sanity check ──
+      - name: Show built artifacts
+        shell: bash
+        run: |
+          echo "=== Release files ==="
+          find frontend/release -maxdepth 1 -type f -exec ls -lh {} \;
+          echo "=== Directory sizes ==="
+          du -sh frontend/release/*/ 2>/dev/null || true
+
+      # ── Upload ──
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}
+          path: |
+            frontend/release/*.exe
+            frontend/release/*.exe.blockmap
+            frontend/release/*.dmg
+            frontend/release/*.dmg.blockmap
+            frontend/release/*.AppImage
+            frontend/release/*.AppImage.blockmap
+            frontend/release/*.deb
+            frontend/release/latest*.yml
+          if-no-files-found: error
+
+  # ── GitHub Release (only on version tags) ──
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List release assets
+        run: ls -lh artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: artifacts/*
