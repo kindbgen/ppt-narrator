@@ -355,10 +355,27 @@ function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso); return `${
 function togglePin(p) { updateProjectMeta(p.id, { pinned: p.pinned ? 0 : 1 }).then(load) }
 async function rename(p) { menuId.value = null; renaming.value = p.id; renameText.value = p.title; await nextTick(); const el = Array.isArray(renameInput.value) ? renameInput.value[renameInput.value.length-1] : renameInput.value; if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) } }
 async function doRename(p) { if (renameText.value && renameText.value !== p.title) { await updateProjectMeta(p.id, { title: renameText.value }); await load() } renaming.value = null }
-async function del(id) { if (!confirm('确定删除？')) return; await deleteProject(id); clearGenerationState(id); await load(); emit('projectDeleted', id); menuId.value = null }
+async function del(id) { if (!confirm('确定删除？')) return; await deleteProject(id); clearGenerationState(id); await load(); emit('projectDeleted', id); menuId.value = null; if (store.currentProjectId === id) router.push('/') }
 async function load() { try { projects.value = await getProjectList() } catch {} }
 
 async function saveSettings() {
+  // Validate required fields
+  const c = cfg.value
+  const missing = []
+  if (c.aiProvider === 'gateway') {
+    if (!c.baseUrl) missing.push('Base URL')
+    if (!c.apiKey) missing.push('API Key')
+    if (!c.model) missing.push('Model name')
+  } else if (c.aiProvider === 'claude') {
+    if (!c.claudeApiKey) missing.push('Claude API Key')
+  } else if (c.aiProvider === 'openai') {
+    if (!c.openaiApiKey) missing.push('OpenAI API Key')
+  }
+  if (missing.length) {
+    alert('请填写 AI 服务的必填项：\n' + missing.map(m => '• ' + m).join('\n'))
+    return
+  }
+
   try {
     if (window.electronAPI) {
       const result = await window.electronAPI.saveSettings(JSON.parse(JSON.stringify(cfg.value)))
@@ -394,5 +411,5 @@ function goHome() { menuId.value = null; router.push('/'); emit('newProject') }
 function closeMenus() { menuId.value = null }
 onMounted(() => { loadSettings(); load(); document.addEventListener('click', closeMenus); window.addEventListener('sidebar-refresh', load) })
 onUnmounted(() => { document.removeEventListener('click', closeMenus); window.removeEventListener('sidebar-refresh', load) })
-defineExpose({ load, hasAI, cfg })
+defineExpose({ load, hasAI, cfg, testAI, testResults })
 </script>

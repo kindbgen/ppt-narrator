@@ -6,6 +6,15 @@
         ⚠️ 请先在左下角「⚙️ 设置」中配置 AI 服务
       </div>
 
+      <!-- Connectivity Test Result -->
+      <div v-if="testResult" :class="['w-full max-w-3xl mb-6 p-4 rounded-xl text-sm text-center', testResult === 'ok' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700']">
+        <template v-if="testResult === 'ok'">✅ AI 服务连接成功</template>
+        <template v-else>
+          ❌ {{ testMsg }}<br>
+          <span class="text-xs">请点击左下角「⚙️ 设置」修改配置后重试</span>
+        </template>
+      </div>
+
       <!-- Hero -->
       <div class="text-center mb-10">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">AI 智能生成 PPT 和旁白</h1>
@@ -23,9 +32,14 @@
         ></textarea>
 
         <!-- Wiki Input -->
-        <div v-if="method === 'docmost'" class="flex gap-2 mt-3">
-          <input v-model="docmostUrl" placeholder="https://your-wiki.com/s/space/p/page-id" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
-          <button @click="fetchDocmost" :disabled="!docmostUrl || fetching" class="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-medium disabled:opacity-40 hover:bg-gray-800 transition-colors shrink-0">{{ fetching ? '获取中...' : '获取文档' }}</button>
+        <div v-if="method === 'docmost'">
+          <div v-if="!wikiReady" class="p-3 bg-orange-50 border border-orange-200 rounded-xl text-xs text-orange-700 mb-3">
+            ⚠️ Wiki MCP 未配置，请先在左下角「⚙️ 设置」中填写 Wiki MCP 的 URL 和 Token
+          </div>
+          <div class="flex gap-2">
+            <input v-model="docmostUrl" placeholder="https://your-wiki.com/s/space/p/page-id" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none" />
+            <button @click="fetchDocmost" :disabled="!docmostUrl || fetching || !wikiReady" class="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-medium disabled:opacity-40 hover:bg-gray-800 transition-colors shrink-0">{{ fetching ? '获取中...' : '获取文档' }}</button>
+          </div>
         </div>
         <p v-if="docmostError" class="text-red-500 text-xs mt-2">{{ docmostError }}</p>
 
@@ -86,11 +100,12 @@
 
       <!-- Generate Button -->
       <button
-        @click="!canGen ? null : generate()"
-        :disabled="!canGen || generating"
+        @click="handleGenerate"
+        :disabled="(!canGen && !!rawContent) || checking"
         class="w-full max-w-md py-3.5 bg-gray-900 text-white rounded-xl text-base font-medium disabled:opacity-30 hover:bg-gray-800 transition-colors"
       >
-        {{ generating ? 'AI 正在生成...' : '🤖 AI 智能生成 PPT 和旁白' }}
+        <span v-if="checking" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2 align-middle"></span>
+        {{ checking ? '正在检测 AI 服务连通性...' : generating ? 'AI 正在生成...' : '🤖 AI 智能生成 PPT 和旁白' }}
       </button>
       <p v-if="!rawContent" class="text-xs text-gray-400 mt-2">请先在上方输入文档内容</p>
 
@@ -128,6 +143,7 @@ const docmostUrl = ref(''); const docmostError = ref(''); const fetching = ref(f
 const rawContent = ref(''); const selStyle = ref('business'); const generating = ref(false)
 const currentProjectId = ref(null)
 const pageMode = ref('auto'); const pageMin = ref(8); const pageMax = ref(12)
+const checking = ref(false); const testResult = ref(null); const testMsg = ref('')
 
 const methods = [{ key: 'paste', label: '手动输入' }, { key: 'docmost', label: 'Wiki 导入' }, { key: 'upload', label: '上传文件' }]
 const styles = [
@@ -145,8 +161,51 @@ const styles = [
     cardBg: 'bg-white', cardText: 'text-emerald-700', cardSub: 'text-emerald-300', statBg: 'bg-emerald-50' }
 ]
 
-const canGen = computed(() => rawContent.value)
-const aiReady = computed(() => shell.value?.hasAI ?? true)
+const canGen = computed(() => rawContent.value && aiReady.value)
+// aiReady: gateway needs baseUrl+apiKey+model, others need matching key
+const aiReady = computed(() => {
+  const c = shell.value?.cfg
+  if (!c) return false
+  if (c.aiProvider === 'gateway') return !!(c.baseUrl && c.apiKey && c.model)
+  if (c.aiProvider === 'claude') return !!c.claudeApiKey
+  if (c.aiProvider === 'openai') return !!c.openaiApiKey
+  if (c.aiProvider === 'ollama') return !!c.ollamaEndpoint
+  return false
+})
+const wikiReady = computed(() => {
+  const c = shell.value?.cfg
+  if (!c) return false
+  return !!(c.mcpUrl && c.mcpToken)
+})
+
+async function handleGenerate() {
+  testResult.value = null; testMsg.value = ''
+  if (!rawContent.value) return
+  if (!aiReady.value) {
+    testResult.value = 'fail'
+    testMsg.value = 'AI 服务未配置或配置不完整，请填写所有必填项'
+    return
+  }
+  // Run connectivity test before generating
+  checking.value = true
+  try {
+    await shell.value.testAI()
+    // Read test result from shell
+    if (shell.value.testResults?.ai === 'ok') {
+      testResult.value = 'ok'
+      setTimeout(() => { testResult.value = null }, 3000)
+      generate()
+    } else {
+      testResult.value = 'fail'
+      testMsg.value = shell.value.testResults?.aiMsg || 'AI 服务连通性测试失败'
+    }
+  } catch {
+    testResult.value = 'fail'
+    testMsg.value = '连通性检测异常，请重试'
+  } finally {
+    checking.value = false
+  }
+}
 
 async function fetchDocmost() {
   fetching.value = true; docmostError.value = ''
