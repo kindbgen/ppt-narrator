@@ -19,7 +19,7 @@ import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const rootDir = path.resolve(__dirname, '../../../') // repo root
+const rootDir = path.resolve(__dirname, '../../') // repo root
 const changelogPath = path.join(rootDir, 'CHANGELOG.md')
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -52,7 +52,8 @@ if (!content.includes('## [Unreleased]')) {
 // 1. Turn [Unreleased] into dated version header
 content = content.replace('## [Unreleased]', `## [${newVersion}] - ${today()}`)
 
-// 2. Prepend fresh Unreleased block
+// 2. Insert fresh Unreleased block BETWEEN intro text and first version heading
+//    Intro = everything before the first `## [` heading
 const unreleasedBlock = [
   '## [Unreleased]',
   '',
@@ -72,7 +73,17 @@ const unreleasedBlock = [
   '',
 ].join('\n')
 
-content = unreleasedBlock + content
+// Find the first `## [x.y.z]` heading (the version we just dated)
+const firstHeadingRegex = /^## \[[\d.]+\]/m
+const match = firstHeadingRegex.exec(content)
+if (!match) {
+  console.error('❌ Could not locate version heading in CHANGELOG.md.')
+  process.exit(1)
+}
+
+// Insert unreleased block before that heading
+const insertAt = match.index
+content = content.slice(0, insertAt) + unreleasedBlock + content.slice(insertAt)
 
 // 3. Update version links
 const repoUrl = 'https://github.com/kindbgen/ppt-narrator'
