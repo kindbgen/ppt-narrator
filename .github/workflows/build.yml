@@ -122,6 +122,8 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -131,9 +133,30 @@ jobs:
       - name: List release assets
         run: ls -lh artifacts/
 
+      - name: Extract changelog for this version
+        id: changelog
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "📦 Extracting changelog for v${VERSION}"
+
+          # Grab everything between "## [VERSION]" and the next "## [" heading
+          BODY=$(awk -v ver="$VERSION" '
+            BEGIN { found=0 }
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md)
+
+          # Write to file to avoid escaping issues
+          echo "$BODY" > /tmp/release-body.md
+          echo "--- Release body ---"
+          cat /tmp/release-body.md
+          echo "--- End ---"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          generate_release_notes: true
+          body_path: /tmp/release-body.md
           files: artifacts/*
