@@ -255,6 +255,7 @@ function formatHTML(html) {
 
 function syncContent() { const c = store.currentSlide.content || ''; editableContent.value = formatHTML(c); originalContent.value = formatHTML(c) }
 watch(() => store.currentPage, syncContent)
+watch(() => store.slides, () => nextTick(syncContent), { deep: true })
 function onContentEdit() { store.updateSlide(store.currentPage, { content: editableContent.value }); clearTimeout(contentSaveTimer); contentSaveTimer = setTimeout(autoSave, 400) }
 function resetContent() { editableContent.value = originalContent.value; store.updateSlide(store.currentPage, { content: originalContent.value }); autoSave() }
 
