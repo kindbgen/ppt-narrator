@@ -30,7 +30,7 @@ mac:
         - arm64
 
 dmg:
-  artifactName: PPT演讲助手-${version}-mac.${ext}
+  artifactName: ${name}-${version}-mac.${ext}
 
 # ===== Windows =====
 win:
@@ -48,7 +48,7 @@ nsis:
   createStartMenuShortcut: true
   unicode: true
   guid: ppt-narrator
-  artifactName: PPT演讲助手-${version}-setup.${ext}
+  artifactName: ${name}-${version}-setup.${ext}
   shortcutName: PPT演讲助手
 
 # ===== Linux =====
@@ -60,7 +60,7 @@ linux:
   maintainer: ppt-narrator@example.com
 
 appImage:
-  artifactName: PPT演讲助手-${version}-linux.${ext}
+  artifactName: ${name}-${version}-linux.${ext}
 
 deb:
-  artifactName: PPT演讲助手-${version}-linux.${ext}
+  artifactName: ${name}-${version}-linux.${ext}
