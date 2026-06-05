@@ -1,7 +1,7 @@
 {
   "name": "PPT-Narrator",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.0",
   "description": "AI驱动的演示文稿生成与双屏演讲工具，支持Web浏览器和Windows/macOS/Linux桌面应用",
   "author": "Kindbgen",
   "homepage": "https://github.com/kindbgen/ppt-narrator",

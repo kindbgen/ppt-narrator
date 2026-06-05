@@ -8,36 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
----
-## [1.0.2] - 2026-06-05
-
-### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
----
-## [1.0.1] - 2026-06-05
-
-### Added
 - GitHub Actions 三平台构建 (Windows/macOS/Linux)
 - Changelog 机制与版本发布脚本
 
@@ -71,7 +41,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tailwind CSS 4.x 样式框架
 - Vue 3 + Pinia + Vue Router 前端架构
 
-[Unreleased]: https://github.com/kindbgen/ppt-narrator/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/kindbgen/ppt-narrator/releases/tag/v1.0.2
-[1.0.1]: https://github.com/kindbgen/ppt-narrator/releases/tag/v1.0.1
+[Unreleased]: https://github.com/kindbgen/ppt-narrator/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/kindbgen/ppt-narrator/releases/tag/v1.0.0
