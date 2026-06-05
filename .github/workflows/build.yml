@@ -89,6 +89,7 @@ jobs:
         working-directory: frontend
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_BUILDER_PUBLISH: never
 
       # ── Sanity check ──
       - name: Show built artifacts
