@@ -23,6 +23,8 @@ asarUnpack:
 # ===== macOS =====
 mac:
   category: public.app-category.productivity
+  hardenedRuntime: false
+  gatekeeperAssess: false
   target:
     - target: dmg
       arch:
