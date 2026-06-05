@@ -198,12 +198,14 @@ onMounted(() => {
   const saved = localStorage.getItem('ppt-slides')
   if (saved) try { slides.value = JSON.parse(saved) } catch {}
   if (slides.value.length > 0) {
-    document.title = slides.value[0]?.title || 'PPT 演讲助手'
+    const t = slides.value[0]?.title || 'PPT 演讲助手'
+    document.title = t + '-演示旁白'
   }
 
   sync.on('PRESENTATION_START', (data) => {
     slides.value = data.slides; currentPage.value = 0; elapsed.value = 0
-    document.title = data.slides[0]?.title || 'PPT 演讲助手'
+    const t = data.slides[0]?.title || 'PPT 演讲助手'
+    document.title = t + '-演示旁白'
     localStorage.setItem('ppt-presentation-start', Date.now())
     resetTimer()
   })

@@ -30,7 +30,7 @@
         <div class="my-1 border-t border-gray-700/40"></div>
         <button @click="toggleFullscreen"
           class="w-full px-4 py-2 text-left text-sm text-gray-400 hover:bg-white/[0.06] flex items-center gap-2.5 transition-colors">
-          <span>⛶</span> 退出全屏
+          <span>⛶</span> {{ isFullscreen ? '退出全屏' : '进入全屏' }}
         </button>
         <button @click="endPresentation"
           class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-400/8 flex items-center gap-2.5 transition-colors">
@@ -65,6 +65,11 @@ const currentSlide = computed(() => slides.value[currentPage.value] || {})
 const ctxVisible = ref(false)
 const ctxX = ref(0)
 const ctxY = ref(0)
+const isFullscreen = ref(false)
+
+function updateFullscreenState() {
+  isFullscreen.value = !!(document.fullscreenElement || (window.electronAPI && window.electronAPI.isFullscreen?.()))
+}
 
 function onContextMenu(e) {
   ctxX.value = Math.min(e.clientX, window.innerWidth - 160)
@@ -121,6 +126,7 @@ const themeClasses = computed(() => {
 
 // --- Lifecycle ---
 onMounted(() => {
+  document.addEventListener('fullscreenchange', updateFullscreenState)
   const saved = localStorage.getItem('ppt-slides')
   if (saved && slides.value.length === 0) {
     try { slides.value = JSON.parse(saved) } catch (e) { /* ignore */ }
@@ -147,6 +153,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', updateFullscreenState)
   sync.off('PAGE_CHANGE')
   sync.off('PRESENTATION_START')
 })
