@@ -564,9 +564,9 @@ function startPresentation() {
         // 录制模式：只打开 Narrator 窗口（旁白+PPT预览同屏），Presenter 按需手动打开
         window.electronAPI.openNarratorWindow()
       } else {
-        // 双屏模式：先打开 Presenter 窗口，延迟再打开 Narrator，避免 macOS 屏幕共享被中断
+        // 双屏模式：Presenter 在扩展屏，Narrator 在主屏，同时打开
         window.electronAPI.openPresenterWindow()
-        setTimeout(() => window.electronAPI.openNarratorWindow(), 800)
+        window.electronAPI.openNarratorWindow()
       }
     } else if (isRecordingMode.value) {
       // 录制模式：单窗口，直接导航到 Narrator（旁白+PPT预览同屏）

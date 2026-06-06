@@ -2,7 +2,7 @@
  * Electron Main Process (CommonJS)
  * PPT Narrator — Desktop Application Entry Point
  */
-const { app, BrowserWindow, ipcMain, session, safeStorage } = require('electron')
+const { app, BrowserWindow, ipcMain, session, safeStorage, screen } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 
@@ -64,14 +64,19 @@ function createMainWindow() {
 
 function createPresenterWindow() {
   if (presenterWindow && !presenterWindow.isDestroyed()) { presenterWindow.focus(); return }
+  // Normal window that fills the display — never native fullscreen
+  // to avoid macOS Spaces hiding the window during screen sharing
+  const displays = screen.getAllDisplays()
+  const targetDisplay = displays.length > 1 ? displays[1] : displays[0]
   presenterWindow = new BrowserWindow({
-    title: 'PPT 演示屏',
+    titleBarStyle: 'hidden', title: 'PPT 演示屏',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false, contextIsolation: true, sandbox: true,
     },
   })
-  presenterWindow.maximize()
+  // Fill the display without entering native fullscreen Space
+  presenterWindow.setBounds(targetDisplay.workArea)
   loadWindow(presenterWindow, '/#/presenter')
   presenterWindow.on('closed', () => {
     presenterWindow = null
@@ -83,8 +88,14 @@ function createPresenterWindow() {
 
 function createNarratorWindow() {
   if (narratorWindow && !narratorWindow.isDestroyed()) { narratorWindow.focus(); return }
+  // Position Narrator on the primary display (always displays[0])
+  const primaryDisplay = screen.getPrimaryDisplay()
+  const { width: pw, height: ph } = primaryDisplay.workArea
+  const w = Math.min(1200, pw)
+  const h = Math.min(780, ph)
   narratorWindow = new BrowserWindow({
-    width: 1200, height: 780, title: '演讲旁白屏',
+    x: Math.round((pw - w) / 2), y: Math.round((ph - h) / 2),
+    width: w, height: h, title: '演讲旁白屏',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false, contextIsolation: true, sandbox: true,
@@ -133,13 +144,31 @@ ipcMain.on('window:close-self', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender)
   if (win) { if (win.isFullScreen()) win.setFullScreen(false); win.close() }
 })
+// Presenter window size when not filling the screen
+const PRESENTER_WINDOWED = { width: 1024, height: 640 }
+
 ipcMain.on('window:toggle-fullscreen', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender)
-  if (win) win.setFullScreen(!win.isFullScreen())
+  if (!win) return
+  // Toggle between maximized (fills screen, no Space) and windowed (title bar + border)
+  if (win.isMaximized()) {
+    // Switch to windowed mode: centered, smaller, with title bar
+    const disp = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+    const { x, y, width, height } = disp.workArea
+    const ww = PRESENTER_WINDOWED.width
+    const wh = PRESENTER_WINDOWED.height
+    win.setBounds({ x: Math.round(x + (width - ww) / 2), y: Math.round(y + (height - wh) / 2), width: ww, height: wh }, true)
+    win.unmaximize()
+  } else {
+    // Switch to fullscreen-like: fill the display
+    const disp = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+    win.setBounds(disp.workArea)
+    win.maximize()
+  }
 })
 ipcMain.handle('window:is-fullscreen', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender)
-  return win ? win.isFullScreen() : false
+  return win ? win.isMaximized() : false
 })
 
 ipcMain.handle('settings:get', () => loadSettings())

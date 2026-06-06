@@ -1,10 +1,27 @@
 <template>
-  <div :class="themeClasses.bg" class="fixed inset-0 flex items-center justify-center p-12 transition-colors duration-500"
+  <div :class="themeClasses.bg" class="fixed inset-0 flex flex-col transition-colors duration-500"
     @keydown.left.prevent="prevSlide" @keydown.right.prevent="nextSlide"
     @keydown.esc.prevent="endPresentation"
     @contextmenu.prevent="onContextMenu"
     @click="ctxVisible = false"
     tabindex="0" ref="mainEl">
+
+    <!-- Custom title bar — only in Electron windowed mode -->
+    <div v-if="!isFullscreen && isElectron" class="flex items-center justify-between h-9 px-3 bg-gray-900/80 backdrop-blur-md border-b border-white/10 shrink-0"
+      style="-webkit-app-region: drag">
+      <span class="text-xs text-gray-400 font-medium select-none">{{ slides[0]?.title || 'PPT 演讲助手' }}</span>
+      <div class="flex items-center gap-1" style="-webkit-app-region: no-drag">
+        <button @click="toggleFullscreen" title="进入全屏" class="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-green-400 hover:bg-green-400/10 transition-all">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+        <button @click="endPresentation" title="结束放映" class="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-all">
+          <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Slide Content -->
+    <div class="flex-1 flex items-center justify-center p-12">
 
     <!-- Context Menu -->
     <Teleport to="body">
@@ -43,6 +60,7 @@
       <h2 v-if="currentSlide.layout !== 'cover' && currentSlide.layout !== 'section' && currentSlide.layout !== 'closing' && currentSlide.layout !== 'toc'" :class="themeClasses.title" class="text-5xl font-bold mb-8">{{ currentSlide.title }}</h2>
       <div :class="themeClasses.body" class="text-2xl leading-relaxed slide-body" v-html="currentSlide.content"></div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -54,6 +72,7 @@ import { useSync } from '../utils/sync'
 const sync = useSync()
 const router = useRouter()
 const mainEl = ref(null)
+const isElectron = !!window.electronAPI
 
 // --- State ---
 const slides = ref([])
