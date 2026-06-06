@@ -84,7 +84,8 @@ const currentSlide = computed(() => slides.value[currentPage.value] || {})
 const ctxVisible = ref(false)
 const ctxX = ref(0)
 const ctxY = ref(0)
-const isFullscreen = ref(false)
+// Electron windows always start maximized, so isFullscreen defaults to true
+const isFullscreen = ref(isElectron)
 
 async function updateFullscreenState() {
   if (window.electronAPI) {
@@ -153,6 +154,7 @@ const themeClasses = computed(() => {
 // --- Lifecycle ---
 onMounted(() => {
   document.addEventListener('fullscreenchange', updateFullscreenState)
+  updateFullscreenState()  // sync initial state (Electron windows start maximized)
   const saved = localStorage.getItem('ppt-slides')
   if (saved && slides.value.length === 0) {
     try { slides.value = JSON.parse(saved) } catch (e) { /* ignore */ }

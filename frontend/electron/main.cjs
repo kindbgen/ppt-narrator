@@ -77,6 +77,7 @@ function createPresenterWindow() {
   })
   // Fill the display without entering native fullscreen Space
   presenterWindow.setBounds(targetDisplay.workArea)
+  presenterWindow.maximize()
   loadWindow(presenterWindow, '/#/presenter')
   presenterWindow.on('closed', () => {
     presenterWindow = null
