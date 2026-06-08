@@ -272,7 +272,7 @@ async function testWiki() {
   try {
     const headers = cfg.value.mcpToken ? { Authorization: `Bearer ${cfg.value.mcpToken}` } : {}
     const resp = await proxyFetch(cfg.value.mcpUrl, 'POST', headers,
-      JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 1 }))
+      JSON.stringify({ jsonrpc: '2.0', method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'ppt-narrator', version: '1.0' } }, id: 1 }))
     if (resp.ok) {
       testResults.value.wiki = 'ok'
     } else {
