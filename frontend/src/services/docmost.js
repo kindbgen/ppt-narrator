@@ -40,9 +40,9 @@ export class DocmostClient {
 
     console.log(`[MCP] Calling ${toolName}`, JSON.stringify(args).slice(0, 200))
 
-    // On localhost, route through Vite dev proxy to avoid CORS
-    const isLocal = window.location.hostname === 'localhost'
-    const url = isLocal ? '/api/mcp-proxy' : this.mcpUrl
+    // In browser dev mode (no electronAPI), route through Vite proxy to avoid CORS
+    const isDevBrowser = !window.electronAPI
+    const url = isDevBrowser ? '/api/mcp-proxy' : this.mcpUrl
 
     const res = await fetch(url, {
       method: 'POST',
