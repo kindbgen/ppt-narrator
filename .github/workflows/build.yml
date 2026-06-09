@@ -103,6 +103,7 @@ jobs:
         with:
           name: ${{ runner.os }}
           retention-days: 1
+          overwrite: true
           path: |
             frontend/release/*.exe
             frontend/release/*.exe.blockmap
