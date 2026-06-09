@@ -574,7 +574,7 @@ function startPresentation() {
     } else {
       // 双屏模式：弹出 Narrator 窗口 + 当前页切换到 Presenter
       const w = 1200; const h = 780
-      window.open('/#/narrator', 'narrator', `width=${w},height=${h},left=${Math.round((screen.width - w) / 2)},top=${Math.round((screen.height - h) / 2)}`)
+      window.open(location.pathname + '#/narrator', 'narrator', `width=${w},height=${h},left=${Math.round((screen.width - w) / 2)},top=${Math.round((screen.height - h) / 2)}`)
       router.push('/presenter')
     }
   })
